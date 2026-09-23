@@ -98,6 +98,7 @@ STRINGS = {
         "cyan": "Turkuaz", "yellow": "Sarı", "orange": "Turuncu", "pink": "Pembe",
         "longrange": "Uzun menzil modu", "language": "Dil / Language",
         "refresh": "Şimdi yenile", "quit": "Çıkış",
+        "help": "Yardım", "guide": "Rehberi aç", "guide_title": "Claw fare rehberi", "battery": "Pil göstergesi",
     },
     "en": {
         "app": "Claw mouse",
@@ -129,9 +130,70 @@ STRINGS = {
         "cyan": "Cyan", "yellow": "Yellow", "orange": "Orange", "pink": "Pink",
         "longrange": "Long range mode", "language": "Language / Dil",
         "refresh": "Refresh now", "quit": "Quit",
+        "help": "Help", "guide": "Open guide", "guide_title": "Claw mouse guide", "battery": "Battery indicator",
     },
 }
+
+# What each setting does. Shown as a notification from the Help submenu and in the guide window.
+HELP = {
+    "tr": [
+        ("battery", "Simgedeki sayı pil yüzdesi, sarı çerçeve şarj olduğunu gösterir. Şarj başlayınca ve bitince, pil %20 ve %10'a düşünce bildirim gelir. Fare uykudayken simge gri olur, hareket ettirince düzelir."),
+        ("presets", "Tek tıkla birkaç ayarı birden uygular: seçilen DPI, 1000 Hz rapor hızı, 4 ms debounce, açı düzeltme ve ripple kapalı, motion sync ve maksimum performans açık."),
+        ("dpi", "DPI, imlecin fare hareketine ne kadar hızlı tepki vereceğidir. Kademeler arasında farenin DPI tuşuyla geçilir. Düşük değer oyunda hassas nişan, yüksek değer masaüstünde hızlı gezinme sağlar."),
+        ("rate", "Rapor hızı, farenin bilgisayara saniyede kaç kez konum bildirdiğidir. 1000 Hz en akıcı ve en düşük gecikmeli seçenektir; düşük değerler biraz pil kazandırır."),
+        ("debounce", "Debounce, iki tıklama arasında geçmesi gereken en kısa süredir. Düşük değer daha hızlı tıklama sağlar; çok düşük değer istemsiz çift tıklamaya yol açabilir. 4 ms iyi bir denge."),
+        ("motion", "Motion sync, sensör okumasını rapor zamanına hizalar. Hareket daha tutarlı olur, buna karşılık çok küçük bir gecikme eklenir."),
+        ("angle", "Açı düzeltme, yataya veya dikeye yakın hareketleri düz çizgiye zorlar. Oyunda mikro düzeltmeleri bozduğu için genellikle kapalı tutulur."),
+        ("ripple", "Ripple kontrolü, yüksek DPI'da sensör titremesini yumuşatır. Gecikme eklediği için oyunda kapalı önerilir."),
+        ("perf", "Maksimum performans, sensörü tam güçte tutar ve seçilen süre dolana kadar uyutmaz. İlk harekette takılmayı önler, biraz pil harcar."),
+        ("light", "Işık menüsü alt ışık şeridinin modunu, rengini, parlaklığını ve hızını ayarlar. Kapalı tutmak pil ömrünü belirgin biçimde uzatır."),
+        ("moveoff", "Hareket ederken ışığı kapat seçeneği, fare kullanılırken ışığı söndürür; ışık yalnızca fare dururken yanar."),
+        ("ledoff", "Kapanma süresi, fare hareketsiz kaldıktan ne kadar sonra ışıkların söneceğini belirler."),
+        ("dpiled", "DPI gösterge ışığı, aktif DPI kademesinin rengini gösteren küçük ışıktır. Sabit yanabilir ya da yanıp sönebilir."),
+        ("longrange", "Uzun menzil modu, alıcı ile fare arasındaki mesafeyi ve parazit direncini artırır; daha fazla pil harcar. Masada, alıcı yakındayken gerekli değildir."),
+    ],
+    "en": [
+        ("battery", "The number on the icon is the battery percentage; a yellow frame means charging. You get a notification when charging starts or stops and at 20% and 10%. While the mouse sleeps the icon turns grey and recovers when you move it."),
+        ("presets", "Applies several settings at once: the chosen DPI, 1000 Hz report rate, 4 ms debounce, angle snapping and ripple off, motion sync and peak performance on."),
+        ("dpi", "DPI is how fast the cursor reacts to mouse movement. The DPI button on the mouse cycles through the stages. Low values give precise aim in games, high values fast navigation on the desktop."),
+        ("rate", "Report rate is how many times per second the mouse reports its position. 1000 Hz is the smoothest and lowest latency option; lower values save a little battery."),
+        ("debounce", "Debounce is the shortest time allowed between two clicks. Lower values click faster; very low values can cause accidental double clicks. 4 ms is a good balance."),
+        ("motion", "Motion sync aligns the sensor reading with the report timing. Movement becomes more consistent at the cost of a very small delay."),
+        ("angle", "Angle snapping forces nearly horizontal or vertical movements into straight lines. It ruins micro adjustments in games, so it is usually kept off."),
+        ("ripple", "Ripple control smooths sensor jitter at high DPI. It adds latency, so it is recommended off for gaming."),
+        ("perf", "Peak performance keeps the sensor at full power and prevents sleep until the chosen time passes. It avoids a hitch on the first movement and uses a little more battery."),
+        ("light", "The lighting menu sets the mode, colour, brightness and speed of the light strip. Keeping it off extends battery life noticeably."),
+        ("moveoff", "Lights off while moving turns the lighting off whenever the mouse is in use; it only lights up while the mouse rests."),
+        ("ledoff", "The lights off delay sets how long after the mouse stops moving the lighting switches off."),
+        ("dpiled", "The DPI indicator light is the small LED that shows the colour of the active DPI stage. It can be steady or flicker."),
+        ("longrange", "Long range mode increases the distance and interference resistance between receiver and mouse at the cost of battery. Not needed on a desk with the receiver nearby."),
+    ],
+}
 LANG = {"code": "en"}
+UNITS = {"ms", "sn", "dk", "s", "min", "hz"}
+
+
+def tcase(text, lang="en"):
+    """Capitalise the first letter of every word; keeps units and {placeholders}; Turkish i/ı rules for "tr"."""
+    def cap(word):
+        if not word or word.lower() in UNITS:
+            return word
+        for i, ch in enumerate(word):
+            if ch == "{":
+                return word
+            if ch.isalpha():
+                if lang == "tr":
+                    up = "İ" if ch == "i" else "I" if ch == "ı" else ch.upper()
+                else:
+                    up = ch.upper()
+                return word[:i] + up + word[i + 1:]
+        return word
+    return " ".join(cap(w) for w in text.split(" "))
+
+
+for _code, _lang in STRINGS.items():
+    for _k in _lang:
+        _lang[_k] = tcase(_lang[_k], _code)
 
 
 def t(key, **kw):
@@ -194,6 +256,36 @@ def dpi_decode(x, ex):
     if base is None:
         return None
     return base * 2 if ex == 0x11 else base
+
+
+def show_guide(autoclose_ms=0):
+    """Scrollable window with every setting explained, in the current language."""
+    import tkinter as tk
+    from tkinter import scrolledtext
+    root = tk.Tk()
+    root.title(t("guide_title"))
+    root.geometry("680x600")
+    try:
+        root.iconbitmap(os.path.join(HERE, "claw.ico"))
+    except Exception:
+        pass
+    txt = scrolledtext.ScrolledText(root, wrap="word", font=("Segoe UI", 10), padx=12, pady=10)
+    txt.pack(fill="both", expand=True)
+    txt.tag_configure("h", font=("Segoe UI", 11, "bold"), spacing1=10, spacing3=4)
+    txt.tag_configure("p", spacing3=6)
+    for key, body in HELP.get(LANG["code"], HELP["en"]):
+        txt.insert("end", t(key) + chr(10), "h")
+        txt.insert("end", body + chr(10), "p")
+    txt.configure(state="disabled")
+    if autoclose_ms:
+        root.after(autoclose_ms, root.destroy)
+    root.mainloop()
+
+
+def launch_guide():
+    """Open the guide in its own process so the tray loop is never blocked."""
+    args = [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, os.path.abspath(__file__)]
+    subprocess.Popen(args + ["--guide", "--lang", LANG["code"]], cwd=HERE)
 
 
 # is the vendor app running (Windows only)
@@ -370,7 +462,7 @@ def make_icon(level, charging, paused=False):
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     if level is None:
-        col, txt, fg = (110, 110, 110), ("II" if paused else "?"), (235, 235, 235)
+        col, txt, fg = (110, 110, 110), ("!" if paused else "II"), (235, 235, 235)
     else:
         col = (60, 170, 60) if level > 33 else (235, 150, 30) if level > 15 else (220, 50, 50)
         txt, fg = str(level), (255, 255, 255)
@@ -420,6 +512,10 @@ def main():
     for i, a in enumerate(sys.argv):
         if a == "--lang" and i + 1 < len(sys.argv) and sys.argv[i + 1] in STRINGS:
             LANG["code"] = sys.argv[i + 1]
+
+    if "--guide" in sys.argv:
+        show_guide(autoclose_ms=1500 if "--guide-test" in sys.argv else 0)
+        return
 
     m = Mouse()
     if "--durum" in sys.argv or "--status" in sys.argv:
@@ -612,6 +708,11 @@ def main():
             return ok
         return run
 
+    def help_action(key):
+        def run(_icon, _item):
+            notify(dict(HELP.get(LANG["code"], HELP["en"]))[key])
+        return run
+
     def set_language(code):
         LANG["code"] = code
         cfg["lang"] = code
@@ -670,6 +771,10 @@ def main():
         Item(L("longrange"), act(lambda: m.set_long_range(not m.long_range)),
              checked=lambda _i: bool(m.long_range), enabled=ready),
         Menu.SEPARATOR,
+        Item(L("help"), Menu(
+            *[Item(L(k), help_action(k)) for k, _ in HELP["en"]],
+            Menu.SEPARATOR,
+            Item(L("guide"), lambda ic, it: launch_guide()))),
         Item(L("language"), Menu(
             Item("Türkçe", lambda _ic, _it: set_language("tr"), checked=lambda _i: LANG["code"] == "tr", radio=True),
             Item("English", lambda _ic, _it: set_language("en"), checked=lambda _i: LANG["code"] == "en", radio=True))),

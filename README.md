@@ -9,6 +9,7 @@ A small system tray app (Windows; Linux in beta) for the **Claw CrossFire AIR V1
 - **Presets:** one click for "CS2 (800 DPI)" or "Desktop (1600 DPI)"
 - Talks to the mouse **directly over HID**, no `HIDUsb.dll`, no CrossFire software
 - Menu in **English or Turkish**, follows the Windows display language, switchable from the menu
+- **Help** submenu explains what every setting does (short notification per item, or the full guide in a window)
 - Icon hides when the mouse is not connected; starts with Windows
 
 > Not affiliated with the manufacturer. The protocol was reverse engineered by observing the vendor software and has been tested only on the **CrossFire AIR V1** (PixArt PAW3325, firmware v2.0, 2.4 GHz receiver). Use at your own risk.
@@ -56,7 +57,7 @@ Debian/Ubuntu packages for the tray backend: `sudo apt install python3-gi gir1.2
 ## Good to know
 
 - **Does not run alongside the CrossFire software.** If both talk to the mouse at the same time the CrossFire app crashes (the mouse is unaffected), so the tray app pauses itself while CrossFire is running (icon shows `II`). You can uninstall CrossFire; this app does not depend on it.
-- Settings cannot be written while the mouse is asleep (idle for ~1 min): the icon turns grey `?` and recovers as soon as you move the mouse.
+- Settings cannot be written while the mouse is asleep (idle for ~1 min): the icon turns grey `II` and recovers as soon as you move the mouse.
 - Every write is read back from the mouse and verified. If anything goes wrong, *Restore* in the vendor software resets the mouse to factory defaults.
 - Macros and button remapping are deliberately out of scope.
 

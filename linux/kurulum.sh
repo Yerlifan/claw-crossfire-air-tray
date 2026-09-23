@@ -37,7 +37,7 @@ python3 -m pip install --user -q -r "$HERE/requirements.txt" || {
     exit 1
 }
 python3 -c "import pystray" 2>/dev/null || {
-    echo "pystray needs a tray backend. Debian/Ubuntu: sudo apt install python3-gi gir1.2-ayatanaappindicator3-0.1"
+    echo "pystray needs a tray backend. Debian/Ubuntu: sudo apt install python3-gi gir1.2-ayatanaappindicator3-0.1 python3-tk"
     echo "GNOME also needs the AppIndicator extension. / GNOME icin ayrica AppIndicator eklentisi gerekir."
 }
 

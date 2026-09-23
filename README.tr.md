@@ -9,6 +9,7 @@ Claw CrossFire AIR V1 kablosuz fare için üreticinin yazılımına da DLL'ine d
 - **Ön ayarlar:** tek tıkla "CS2 (800 DPI)" veya "Masaüstü (1600 DPI)"
 - Fareyle **doğrudan USB üzerinden** konuşur, `HIDUsb.dll` ya da CrossFire yazılımı gerekmez
 - Menü **Türkçe veya İngilizce**, Windows görüntü dilini izler, menüden değiştirilebilir
+- **Yardım** alt menüsü her ayarın ne işe yaradığını anlatır (öğe başına kısa bildirim ya da pencerede tam rehber)
 - Fare takılı değilken simge gizlenir; Windows ile birlikte başlar
 
 > Bu araç üreticiyle ilişkili değildir. Protokol, üretici yazılımının fareye gönderdikleri izlenerek tersine mühendislikle çıkarılmıştır ve yalnızca **CrossFire AIR V1** (PixArt PAW3325, firmware v2.0, 2.4 GHz alıcı) ile test edilmiştir. Kullanım kendi sorumluluğunuzdadır.
@@ -56,7 +57,7 @@ Debian/Ubuntu'da tepsi arka ucu için: `sudo apt install python3-gi gir1.2-ayata
 ## Bilinmesi gerekenler
 
 - **CrossFire yazılımıyla aynı anda çalışmaz.** İkisi aynı anda fareyle konuşursa CrossFire çöker (fareye bir şey olmaz); bu yüzden CrossFire açıkken araç kendini duraklatır (simgede `II`). CrossFire'ı kaldırabilirsiniz; bu araç ona bağımlı değildir.
-- Fare uykudayken (hareketsiz ~1 dk) ayar yazılamaz; simge gri `?` olur, hareket ettirince kendiliğinden düzelir.
+- Fare uykudayken (hareketsiz ~1 dk) ayar yazılamaz; simge gri `II` olur, hareket ettirince kendiliğinden düzelir.
 - Yazılan her ayar fareden geri okunarak doğrulanır. Bir şey ters giderse üreticinin yazılımındaki **Restore / Varsayılana Dön** fabrika ayarına döndürür.
 - Makro ve tuş atama bilerek kapsam dışıdır.
 
