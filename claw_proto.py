@@ -56,7 +56,8 @@ def checksum_ok(r):
 
 
 def xfer(path, pkt, tries=3):
-    """Paketi gönderir, aynı komut+adres+uzunluk ile gelen yanıtı döndürür; yoksa None."""
+    """Paketi gönderir, aynı komut+adres ile gelen yanıtı döndürür; yoksa None.
+    (Uzunluk karşılaştırılmaz: pil/sürüm isteklerinde 0, yanıtta 2 gelir.)"""
     import hid
     with _lock:
         for _ in range(tries):
@@ -69,7 +70,7 @@ def xfer(path, pkt, tries=3):
                     r = bytes(d.read(64, TIMEOUT_MS))
                     if not r:
                         break
-                    if r[0] == REPORT_ID and r[1] == pkt[1] and r[3:6] == pkt[3:6] and checksum_ok(r):
+                    if r[0] == REPORT_ID and r[1] == pkt[1] and r[3:5] == pkt[3:5] and checksum_ok(r):
                         return r[:17]
             except (OSError, ValueError):
                 pass
