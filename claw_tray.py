@@ -4,9 +4,9 @@
 Battery percentage + every mouse setting (DPI, report rate, debounce, sensor, lighting, long range)
 in the right click menu. Talks to the mouse directly over USB HID (claw_proto.py, hidapi); the vendor
 software is not needed. Pauses itself while the vendor app is running to avoid conflicts.
-UI language: Turkish if the Windows UI language is Turkish, otherwise English; switchable from the menu.
+UI language follows the system language (ten languages, see claw_lang.py) and can be switched from the menu.
 
-Flash layout (each field: value, 0x55 minus value):
+Flash layout (each field is stored as value, chk with chk = (0x55 - value) & 0xFF):
   0x00 report rate | 0x02 stage count | 0x04 active stage | 0x0A LOD
   0x0C+4i DPI (x, y, ex, chk) | 0x2C+4i stage colour (r, g, b, chk)
   0x4C/4E/50/52 DPI LED: mode, brightness, speed, enable
@@ -66,111 +66,42 @@ DPILED_MODE_CODES = [1, 2]
 DPI_TABLE = cp.DPI_TABLE
 DPI_REVERSE = cp.DPI_REVERSE
 
-# i18n
-STRINGS = {
-    "tr": {
-        "app": "Claw fare",
-        "title_paused": "Claw fare: CrossFire açık, duraklatıldı",
-        "title_asleep": "Claw fare: uykuda (hareket ettirin)",
-        "title_ok": "Claw fare: %{lvl}",
-        "charging": " (şarj oluyor)",
-        "dpi_suffix": ", {dpi} DPI",
-        "n_charge_on": "Şarj başladı (%{lvl})",
-        "n_charge_off": "Şarj kablosu çıktı (%{lvl})",
-        "n_full": "Pil doldu (%100), kabloyu çıkarabilirsiniz",
-        "n_low": "Pil %{lvl}, şarj edin",
-        "n_write_fail": "Ayar yazılamadı: fare uykuda ya da CrossFire açık olabilir",
-        "n_preset": "{name} ön ayarı uygulandı ({dpi} DPI)",
-        "presets": "Ön ayarlar", "preset_cs2": "CS2 (800 DPI)", "preset_desk": "Masaüstü (1600 DPI)",
-        "dpi": "DPI", "active_stage": "Aktif kademe", "stage_n": "Kademe {n}: {dpi} DPI",
-        "stage_value": "Kademe {n} değeri ({dpi})", "stage_count": "Kademe sayısı",
-        "rate": "Rapor hızı", "debounce": "Debounce", "ms": "{n} ms",
-        "sensor": "Sensör", "motion": "Motion sync", "angle": "Açı düzeltme (angle snapping)",
-        "ripple": "Ripple kontrolü", "perf": "Maksimum performans", "off": "Kapalı",
-        "sec": "{n} sn", "min": "{n} dk",
-        "light": "Işık", "mode": "Mod", "color": "Renk", "brightness": "Parlaklık", "speed": "Hız",
-        "moveoff": "Hareket ederken ışığı kapat", "ledoff": "Hareketsiz kalınca kapanma süresi",
-        "dpiled": "DPI gösterge ışığı",
-        "led1": "Gökkuşağı Akış", "led2": "Tek Renk Nefes", "led3": "Gökkuşağı Sabit",
-        "led4": "Neon", "led5": "Gökkuşağı Yanıp Sönme", "led6": "Çok Renkli Sabit",
-        "dl1": "Sabit ışık", "dl2": "Yanıp sönme",
-        "red": "Kırmızı", "green": "Yeşil", "blue": "Mavi", "white": "Beyaz", "purple": "Mor",
-        "cyan": "Turkuaz", "yellow": "Sarı", "orange": "Turuncu", "pink": "Pembe",
-        "longrange": "Uzun menzil modu", "language": "Dil / Language",
-        "refresh": "Şimdi yenile", "quit": "Çıkış",
-        "help": "Yardım", "guide": "Rehberi aç", "guide_title": "Claw fare rehberi", "battery": "Pil göstergesi",
-    },
-    "en": {
-        "app": "Claw mouse",
-        "title_paused": "Claw mouse: CrossFire is running, paused",
-        "title_asleep": "Claw mouse: asleep (move it)",
-        "title_ok": "Claw mouse: {lvl}%",
-        "charging": " (charging)",
-        "dpi_suffix": ", {dpi} DPI",
-        "n_charge_on": "Charging started ({lvl}%)",
-        "n_charge_off": "Charging cable unplugged ({lvl}%)",
-        "n_full": "Battery full (100%), you can unplug the cable",
-        "n_low": "Battery {lvl}%, please charge",
-        "n_write_fail": "Could not write the setting: mouse asleep or CrossFire running",
-        "n_preset": "{name} preset applied ({dpi} DPI)",
-        "presets": "Presets", "preset_cs2": "CS2 (800 DPI)", "preset_desk": "Desktop (1600 DPI)",
-        "dpi": "DPI", "active_stage": "Active stage", "stage_n": "Stage {n}: {dpi} DPI",
-        "stage_value": "Stage {n} value ({dpi})", "stage_count": "Number of stages",
-        "rate": "Report rate", "debounce": "Debounce", "ms": "{n} ms",
-        "sensor": "Sensor", "motion": "Motion sync", "angle": "Angle snapping",
-        "ripple": "Ripple control", "perf": "Peak performance", "off": "Off",
-        "sec": "{n} s", "min": "{n} min",
-        "light": "Lighting", "mode": "Mode", "color": "Colour", "brightness": "Brightness", "speed": "Speed",
-        "moveoff": "Lights off while moving", "ledoff": "Lights off delay when idle",
-        "dpiled": "DPI indicator light",
-        "led1": "Rainbow Wave", "led2": "Single Colour Breathing", "led3": "Rainbow Fixed",
-        "led4": "Neon", "led5": "Rainbow Flicker", "led6": "Multicolour Fixed",
-        "dl1": "Steady", "dl2": "Flicker",
-        "red": "Red", "green": "Green", "blue": "Blue", "white": "White", "purple": "Purple",
-        "cyan": "Cyan", "yellow": "Yellow", "orange": "Orange", "pink": "Pink",
-        "longrange": "Long range mode", "language": "Language / Dil",
-        "refresh": "Refresh now", "quit": "Quit",
-        "help": "Help", "guide": "Open guide", "guide_title": "Claw mouse guide", "battery": "Battery indicator",
-    },
-}
+# i18n: all UI text lives in claw_lang.py
+from claw_lang import STRINGS, HELP, PRESET_NAMES, LANG_NAMES, WIN_LANG_IDS, RTL  # noqa: E402
 
-# What each setting does. Shown as a notification from the Help submenu and in the guide window.
-HELP = {
-    "tr": [
-        ("battery", "Simgedeki sayı pil yüzdesi, sarı çerçeve şarj olduğunu gösterir. Şarj başlayınca ve bitince, pil %20 ve %10'a düşünce bildirim gelir. Fare uykudayken simge gri olur, hareket ettirince düzelir."),
-        ("presets", "Tek tıkla birkaç ayarı birden uygular: seçilen DPI, 1000 Hz rapor hızı, 4 ms debounce, açı düzeltme ve ripple kapalı, motion sync ve maksimum performans açık."),
-        ("dpi", "DPI, imlecin fare hareketine ne kadar hızlı tepki vereceğidir. Kademeler arasında farenin DPI tuşuyla geçilir. Düşük değer oyunda hassas nişan, yüksek değer masaüstünde hızlı gezinme sağlar."),
-        ("rate", "Rapor hızı, farenin bilgisayara saniyede kaç kez konum bildirdiğidir. 1000 Hz en akıcı ve en düşük gecikmeli seçenektir; düşük değerler biraz pil kazandırır."),
-        ("debounce", "Debounce, iki tıklama arasında geçmesi gereken en kısa süredir. Düşük değer daha hızlı tıklama sağlar; çok düşük değer istemsiz çift tıklamaya yol açabilir. 4 ms iyi bir denge."),
-        ("motion", "Motion sync, sensör okumasını rapor zamanına hizalar. Hareket daha tutarlı olur, buna karşılık çok küçük bir gecikme eklenir."),
-        ("angle", "Açı düzeltme, yataya veya dikeye yakın hareketleri düz çizgiye zorlar. Oyunda mikro düzeltmeleri bozduğu için genellikle kapalı tutulur."),
-        ("ripple", "Ripple kontrolü, yüksek DPI'da sensör titremesini yumuşatır. Gecikme eklediği için oyunda kapalı önerilir."),
-        ("perf", "Maksimum performans, sensörü tam güçte tutar ve seçilen süre dolana kadar uyutmaz. İlk harekette takılmayı önler, biraz pil harcar."),
-        ("light", "Işık menüsü alt ışık şeridinin modunu, rengini, parlaklığını ve hızını ayarlar. Kapalı tutmak pil ömrünü belirgin biçimde uzatır."),
-        ("moveoff", "Hareket ederken ışığı kapat seçeneği, fare kullanılırken ışığı söndürür; ışık yalnızca fare dururken yanar."),
-        ("ledoff", "Kapanma süresi, fare hareketsiz kaldıktan ne kadar sonra ışıkların söneceğini belirler."),
-        ("dpiled", "DPI gösterge ışığı, aktif DPI kademesinin rengini gösteren küçük ışıktır. Sabit yanabilir ya da yanıp sönebilir."),
-        ("longrange", "Uzun menzil modu, alıcı ile fare arasındaki mesafeyi ve parazit direncini artırır; daha fazla pil harcar. Masada, alıcı yakındayken gerekli değildir."),
-    ],
-    "en": [
-        ("battery", "The number on the icon is the battery percentage; a yellow frame means charging. You get a notification when charging starts or stops and at 20% and 10%. While the mouse sleeps the icon turns grey and recovers when you move it."),
-        ("presets", "Applies several settings at once: the chosen DPI, 1000 Hz report rate, 4 ms debounce, angle snapping and ripple off, motion sync and peak performance on."),
-        ("dpi", "DPI is how fast the cursor reacts to mouse movement. The DPI button on the mouse cycles through the stages. Low values give precise aim in games, high values fast navigation on the desktop."),
-        ("rate", "Report rate is how many times per second the mouse reports its position. 1000 Hz is the smoothest and lowest latency option; lower values save a little battery."),
-        ("debounce", "Debounce is the shortest time allowed between two clicks. Lower values click faster; very low values can cause accidental double clicks. 4 ms is a good balance."),
-        ("motion", "Motion sync aligns the sensor reading with the report timing. Movement becomes more consistent at the cost of a very small delay."),
-        ("angle", "Angle snapping forces nearly horizontal or vertical movements into straight lines. It ruins micro adjustments in games, so it is usually kept off."),
-        ("ripple", "Ripple control smooths sensor jitter at high DPI. It adds latency, so it is recommended off for gaming."),
-        ("perf", "Peak performance keeps the sensor at full power and prevents sleep until the chosen time passes. It avoids a hitch on the first movement and uses a little more battery."),
-        ("light", "The lighting menu sets the mode, colour, brightness and speed of the light strip. Keeping it off extends battery life noticeably."),
-        ("moveoff", "Lights off while moving turns the lighting off whenever the mouse is in use; it only lights up while the mouse rests."),
-        ("ledoff", "The lights off delay sets how long after the mouse stops moving the lighting switches off."),
-        ("dpiled", "The DPI indicator light is the small LED that shows the colour of the active DPI stage. It can be steady or flicker."),
-        ("longrange", "Long range mode increases the distance and interference resistance between receiver and mouse at the cost of battery. Not needed on a desk with the receiver nearby."),
-    ],
-}
+# Preset fields: dpi, rate (1/2/4/8), debounce ms, angle, ripple, motion, perf (x10 s, 0 = off), light (0/1)
+DEFAULT_PRESETS = [
+    {"dpi": 800,  "rate": 1, "debounce": 4, "angle": 0, "ripple": 0, "motion": 1, "perf": 6, "light": 0},
+    {"dpi": 1600, "rate": 1, "debounce": 4, "angle": 0, "ripple": 0, "motion": 1, "perf": 6, "light": 0},
+    {"dpi": 400,  "rate": 1, "debounce": 6, "angle": 1, "ripple": 1, "motion": 1, "perf": 3, "light": 0},
+    {"dpi": 1600, "rate": 2, "debounce": 8, "angle": 0, "ripple": 0, "motion": 1, "perf": 0, "light": 0},
+    {"dpi": 2400, "rate": 2, "debounce": 8, "angle": 0, "ripple": 0, "motion": 1, "perf": 0, "light": 0},
+]
+PRESET_COUNT = len(DEFAULT_PRESETS)
+
+
+def default_preset(i, lang):
+    p = dict(DEFAULT_PRESETS[i])
+    p["name"] = PRESET_NAMES.get(lang, PRESET_NAMES["en"])[i]
+    return p
+
+
+def get_presets(cfg, lang):
+    """Five presets from config, filling missing ones with defaults."""
+    lst = cfg.get("presets")
+    if not isinstance(lst, list):
+        lst = []
+    out = []
+    for i in range(PRESET_COUNT):
+        p = default_preset(i, lang)
+        if i < len(lst) and isinstance(lst[i], dict):
+            p.update({k: v for k, v in lst[i].items() if k in p})
+        out.append(p)
+    return out
+
+
 LANG = {"code": "en"}
-UNITS = {"ms", "sn", "dk", "s", "min", "hz"}
+UNITS = {"ms", "sn", "dk", "s", "min", "hz", "с", "мс", "мин", "秒", "分钟", "分", "초", "분", "ث", "د"}
 
 
 def tcase(text, lang="en"):
@@ -211,9 +142,12 @@ def system_language():
     try:
         if IS_WIN:
             lang_id = ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF
-            return "tr" if lang_id == 0x1F else "en"
-        code = os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or ""
-        return "tr" if code.lower().startswith("tr") else "en"
+            return WIN_LANG_IDS.get(lang_id, "en")
+        code = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").lower()
+        for k in STRINGS:
+            if code.startswith(k):
+                return k
+        return "en"
     except Exception:
         return "en"
 
@@ -271,8 +205,9 @@ def show_guide(autoclose_ms=0):
         pass
     txt = scrolledtext.ScrolledText(root, wrap="word", font=("Segoe UI", 10), padx=12, pady=10)
     txt.pack(fill="both", expand=True)
-    txt.tag_configure("h", font=("Segoe UI", 11, "bold"), spacing1=10, spacing3=4)
-    txt.tag_configure("p", spacing3=6)
+    just = "right" if LANG["code"] in RTL else "left"
+    txt.tag_configure("h", font=("Segoe UI", 11, "bold"), spacing1=10, spacing3=4, justify=just)
+    txt.tag_configure("p", spacing3=6, justify=just)
     for key, body in HELP.get(LANG["code"], HELP["en"]):
         txt.insert("end", t(key) + chr(10), "h")
         txt.insert("end", body + chr(10), "p")
@@ -280,6 +215,22 @@ def show_guide(autoclose_ms=0):
     if autoclose_ms:
         root.after(autoclose_ms, root.destroy)
     root.mainloop()
+
+
+def rename_preset_dialog(index):
+    """Small window asking for a new preset name; writes config.json and exits."""
+    import tkinter as tk
+    from tkinter import simpledialog
+    cfg = load_config()
+    presets = get_presets(cfg, LANG["code"])
+    root = tk.Tk()
+    root.withdraw()
+    name = simpledialog.askstring(t("rename_title"), t("rename_prompt"), initialvalue=presets[index]["name"], parent=root)
+    root.destroy()
+    if name and name.strip():
+        presets[index]["name"] = name.strip()
+        cfg["presets"] = presets
+        save_config(cfg)
 
 
 def launch_guide():
@@ -420,7 +371,7 @@ class Mouse:
             return ok
 
     def set_group(self, addr, vals):
-        """Multi byte field: values plus checksum (0x55 minus sum)."""
+        """Multi byte field: values followed by chk = (0x55 - sum(values)) & 0xFF."""
         with self.lock:
             if not self._can_write():
                 return False
@@ -516,6 +467,9 @@ def main():
     if "--guide" in sys.argv:
         show_guide(autoclose_ms=1500 if "--guide-test" in sys.argv else 0)
         return
+    if "--rename-preset" in sys.argv:
+        rename_preset_dialog(int(sys.argv[sys.argv.index("--rename-preset") + 1]))
+        return
 
     m = Mouse()
     if "--durum" in sys.argv or "--status" in sys.argv:
@@ -580,7 +534,7 @@ def main():
         if ttl != last["title"]:
             icon.title = ttl
             last["title"] = ttl
-        msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"])
+        msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"], json.dumps(cfg.get("presets"), sort_keys=True))
         if force or msig != last["menu"]:
             try:
                 icon.update_menu()
@@ -688,30 +642,81 @@ def main():
     def dpiled_state():
         return (m.byte(A_DL_MODE) or 0) if m.byte(A_DL_EN) else 0
 
-    def preset(dpi, name_key):
+    def presets():
+        return get_presets(cfg, LANG["code"])
+
+    def apply_preset(i):
         def run():
+            p = presets()[i]
             n = m.byte(A_MAXDPI) or 0
-            idx = next((i for i in range(n) if m.dpi(i) == dpi), None)
+            idx = next((k for k in range(n) if m.dpi(k) == p["dpi"]), None)
             if idx is None:
                 idx = 0
-                if not m.set_dpi(0, dpi):
+                if not m.set_dpi(0, p["dpi"]):
                     return False
             ok = m.set_byte(A_CURDPI, idx)
-            ok = m.set_byte(A_RATE, 1) and ok
-            ok = m.set_byte(A_DEBOUNCE, 4) and ok
-            ok = m.set_byte(A_ANGLE, 0) and ok
-            ok = m.set_byte(A_RIPPLE, 0) and ok
-            ok = m.set_byte(A_MOTION, 1) and ok
-            ok = set_perf(6) and ok
+            ok = m.set_byte(A_RATE, p["rate"]) and ok
+            ok = m.set_byte(A_DEBOUNCE, p["debounce"]) and ok
+            ok = m.set_byte(A_ANGLE, p["angle"]) and ok
+            ok = m.set_byte(A_RIPPLE, p["ripple"]) and ok
+            ok = m.set_byte(A_MOTION, p["motion"]) and ok
+            ok = set_perf(p["perf"]) and ok
+            ok = m.set_byte(A_LED_EN, 1 if p["light"] else 0) and ok
             if ok:
-                notify(t("n_preset", name=t(name_key).split(" (")[0], dpi=dpi))
+                notify(t("n_preset", name=p["name"], dpi=p["dpi"]))
             return ok
         return run
+
+    def save_preset(i):
+        def run():
+            cur = m.byte(A_CURDPI)
+            dpi = m.dpi(cur) if cur is not None else None
+            if dpi is None:
+                return False
+            lst = presets()
+            lst[i].update({"dpi": dpi, "rate": m.byte(A_RATE) or 1, "debounce": m.byte(A_DEBOUNCE) or 4,
+                           "angle": m.byte(A_ANGLE) or 0, "ripple": m.byte(A_RIPPLE) or 0, "motion": m.byte(A_MOTION) or 0,
+                           "perf": perf_state(), "light": m.byte(A_LED_EN) or 0})
+            cfg["presets"] = lst
+            save_config(cfg)
+            notify(t("n_saved", name=lst[i]["name"]))
+            return True
+        return run
+
+    def reset_preset(i):
+        def run():
+            lst = presets()
+            lst[i] = default_preset(i, LANG["code"])
+            cfg["presets"] = lst
+            save_config(cfg)
+            return True
+        return run
+
+    def rename_preset(i):
+        def run(_icon, _item):
+            def work():
+                args = [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, os.path.abspath(__file__)]
+                subprocess.run(args + ["--rename-preset", str(i), "--lang", LANG["code"]], cwd=HERE)
+                cfg.update(load_config())
+                redraw(force=True)
+            threading.Thread(target=work, daemon=True).start()
+        return run
+
+    def preset_menu(i):
+        return Item(lambda _i, i=i: t("preset_label", name=presets()[i]["name"], dpi=presets()[i]["dpi"]), Menu(
+            Item(L("apply"), act(apply_preset(i)), enabled=ready),
+            Item(L("save_here"), act(save_preset(i)), enabled=ready),
+            Item(L("rename"), rename_preset(i)),
+            Item(L("reset_preset"), act(reset_preset(i)))))
 
     def help_action(key):
         def run(_icon, _item):
             notify(dict(HELP.get(LANG["code"], HELP["en"]))[key])
         return run
+
+    def language_item(code):
+        return Item(LANG_NAMES[code], lambda _ic, _it: set_language(code),
+                    checked=lambda _i, code=code: LANG["code"] == code, radio=True)
 
     def set_language(code):
         LANG["code"] = code
@@ -758,9 +763,7 @@ def main():
     icon.menu = Menu(
         Item(lambda _i: title_text(), None, enabled=False),
         Menu.SEPARATOR,
-        Item(L("presets"), Menu(Item(L("preset_cs2"), act(preset(800, "preset_cs2")), enabled=ready),
-                                Item(L("preset_desk"), act(preset(1600, "preset_desk")), enabled=ready)),
-             enabled=ready),
+        Item(L("presets"), Menu(*[preset_menu(i) for i in range(PRESET_COUNT)])),
         Item(L("dpi"), dpi_menu, enabled=ready),
         Item(L("rate"), Menu(*[radio(txt, lambda: m.byte(A_RATE), c, lambda v: m.set_byte(A_RATE, v))
                                for c, txt in RATES]), enabled=ready),
@@ -775,9 +778,7 @@ def main():
             *[Item(L(k), help_action(k)) for k, _ in HELP["en"]],
             Menu.SEPARATOR,
             Item(L("guide"), lambda ic, it: launch_guide()))),
-        Item(L("language"), Menu(
-            Item("Türkçe", lambda _ic, _it: set_language("tr"), checked=lambda _i: LANG["code"] == "tr", radio=True),
-            Item("English", lambda _ic, _it: set_language("en"), checked=lambda _i: LANG["code"] == "en", radio=True))),
+        Item(L("language"), Menu(*[language_item(code) for code in LANG_NAMES])),
         Item(L("refresh"), lambda _ic, _it: threading.Thread(target=refresh, args=(True,), daemon=True).start()),
         Item(L("quit"), lambda ic, _it: ic.stop()),
     )
