@@ -8,6 +8,7 @@ Claw CrossFire AIR V1 kablosuz fare için üreticinin yazılımına da DLL'ine d
 - **Tüm ayarlar sağ tık menüsünde:** DPI kademeleri, rapor hızı, debounce, motion sync, açı düzeltme, ripple kontrolü, maksimum performans, ışık modu / renk / parlaklık / hız, uzun menzil modu
 - **Ön ayarlar:** tek tıkla "CS2 (800 DPI)" veya "Masaüstü (1600 DPI)"
 - Fareyle **doğrudan USB üzerinden** konuşur — `HIDUsb.dll` ya da CrossFire yazılımı gerekmez
+- Menü **Türkçe veya İngilizce** — Windows görüntü dilini izler, menüden değiştirilebilir
 - Fare takılı değilken simge gizlenir; Windows ile birlikte başlar
 
 > Bu araç üreticiyle ilişkili değildir. Protokol, üretici yazılımının fareye gönderdikleri izlenerek tersine mühendislikle çıkarılmıştır ve yalnızca **CrossFire AIR V1** (PixArt PAW3325, firmware v2.0, 2.4 GHz alıcı) ile test edilmiştir. Kullanım kendi sorumluluğunuzdadır.
@@ -38,7 +39,7 @@ pythonw claw_tray.py
 
 `kurulum.ps1` burada da çalışır (yanında `ClawTray.exe` yoksa `pythonw` kullanır). Kaldırmak için `kurulum.ps1 -Kaldir` çalıştırıp klasörü silin; sisteme başka hiçbir şey yazılmaz.
 
-Mevcut durumu terminalden görmek için: `python claw_tray.py --durum` (ya da `ClawTray.exe --durum`).
+Mevcut durumu terminalden görmek için: `python claw_tray.py --durum` (ya da `ClawTray.exe --durum`). Dili zorlamak için: `--lang tr` / `--lang en`.
 
 ## Bilinmesi gerekenler
 

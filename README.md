@@ -8,9 +8,10 @@ A small Windows system-tray app for the **Claw CrossFire AIR V1** wireless mouse
 - **Every setting in the right-click menu:** DPI stages, report rate, debounce, motion sync, angle snapping, ripple control, peak performance, lighting mode / colour / brightness / speed, long-range mode
 - **Presets:** one click for "CS2 (800 DPI)" or "Desktop (1600 DPI)"
 - Talks to the mouse **directly over HID** — no `HIDUsb.dll`, no CrossFire software
+- Menu in **English or Turkish** — follows the Windows display language, switchable from the menu
 - Icon hides when the mouse is not connected; starts with Windows
 
-> Not affiliated with the manufacturer. The protocol was reverse-engineered by observing the vendor software and has been tested only on the **CrossFire AIR V1** (PixArt PAW3325, firmware v2.0, 2.4 GHz receiver). Use at your own risk. The menu text is Turkish.
+> Not affiliated with the manufacturer. The protocol was reverse-engineered by observing the vendor software and has been tested only on the **CrossFire AIR V1** (PixArt PAW3325, firmware v2.0, 2.4 GHz receiver). Use at your own risk.
 
 ## Install
 
@@ -38,7 +39,7 @@ pythonw claw_tray.py
 
 `kurulum.ps1` works here too (it uses `pythonw` when there is no `ClawTray.exe` next to it). To uninstall: `kurulum.ps1 -Kaldir`, then delete the folder — nothing else is written to the system.
 
-Print the current state from a terminal: `python claw_tray.py --durum` (or `ClawTray.exe --durum`).
+Print the current state from a terminal: `python claw_tray.py --status` (or `ClawTray.exe --status`). Force a language: `--lang en` / `--lang tr`.
 
 ## Good to know
 
