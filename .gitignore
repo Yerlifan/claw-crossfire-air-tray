@@ -1,0 +1,17 @@
+# Üreticiye ait dosyalar (dağıtılmaz) ve yerel yedekler
+vendor/
+yedek/
+
+# Yerel çalışma dosyaları
+_gen_dllsiz.py
+battery_probe.py
+raw_probe.py
+flash_logger.py
+flash_log.txt
+preview_*.png
+claw_battery_tray*.py
+*.bak
+*.log
+
+__pycache__/
+*.pyc

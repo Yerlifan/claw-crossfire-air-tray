@@ -1,0 +1,87 @@
+# Claw CrossFire AIR — sistem tepsisi denetimi
+
+Claw CrossFire AIR V1 kablosuz fare için üreticinin yazılımına ihtiyaç duymayan, Türkçe, hafif bir sistem tepsisi aracı.
+
+- **Pil yüzdesi** tepside büyük rakamla; şarj başlayınca / bitince, pil %20 ve %10'a düşünce Windows bildirimi
+- **Tüm ayarlar sağ tık menüsünde:** DPI kademeleri, rapor hızı, debounce, motion sync, açı düzeltme, ripple kontrolü, maksimum performans, ışık modu / renk / parlaklık / hız, uzun menzil modu
+- **Ön ayarlar:** tek tıkla "CS2 (800 DPI)" veya "Masaüstü (1600 DPI)"
+- Fareyle **doğrudan USB üzerinden** konuşur — üreticinin `HIDUsb.dll` dosyası ya da CrossFire yazılımı gerekmez
+- Fare takılı değilken simge gizlenir; Windows ile birlikte başlar
+
+> Bu araç üreticiyle ilişkili değildir. Protokol, fareye yazılan komutlar okunarak tersine mühendislikle çıkarılmıştır ve yalnızca **CrossFire AIR V1** (PixArt PAW3325, firmware v2.0, 2.4 GHz alıcı) ile test edilmiştir. Kullanım kendi sorumluluğunuzdadır.
+
+## Kurulum
+
+Gereksinimler: Windows 10/11, Python 3.10+.
+
+```powershell
+git clone https://github.com/Yerlifan/claw-crossfire-air-tray.git
+cd claw-crossfire-air-tray
+pip install -r requirements.txt
+pythonw claw_tray.py
+```
+
+Kısayollar (Başlat menüsü, masaüstü ve Windows ile başlatma) için:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File kurulum.ps1
+```
+
+Kaldırmak için `kurulum.ps1 -Kaldir` çalıştırıp klasörü silmeniz yeterlidir; sisteme başka hiçbir şey yazılmaz.
+
+Mevcut durumu terminalden görmek için: `python claw_tray.py --durum`
+
+## Bilinmesi gerekenler
+
+- **CrossFire yazılımıyla aynı anda çalışmaz.** İkisi aynı anda fareyle konuşursa CrossFire çöker (fareye bir şey olmaz). Bu yüzden CrossFire açıkken araç kendini duraklatır (simgede `II`). CrossFire'ı kaldırabilirsiniz; bu araç ona bağımlı değildir.
+- Fare uykudayken (hareketsiz ~1 dk) ayar yazılamaz; simge gri `--` olur, hareket ettirince kendiliğinden düzelir.
+- Yazılan her ayar fareden geri okunarak doğrulanır. Bir şey ters giderse üreticinin yazılımındaki **Restore / Varsayılana Dön** fabrika ayarına döndürür.
+- Makro ve tuş atama bilerek kapsam dışıdır.
+
+## Nasıl çalışıyor
+
+Fare (ya da alıcı) VID `0x3554` altında, usage page `0xFF02` olan bir HID koleksiyonu açar. Her komut 17 baytlık bir çıkış raporudur, yanıt aynı biçimde giriş raporu olarak gelir:
+
+```
+[0]=0x08 rapor kimliği  [1]=komut  [2]=durum  [3..4]=adres (big-endian)
+[5]=uzunluk (≤10)       [6..15]=veri           [16]=0x55 − toplam(0..15)
+```
+
+| Komut | İşlev |
+|---|---|
+| `0x03` | Fare çevrimiçi mi |
+| `0x04` | Pil: `[6]` seviye %, `[7]` şarj oluyor |
+| `0x07` / `0x08` | Ayar flash'ına yaz / oku |
+| `0x12` | Sürüm |
+| `0x16` / `0x17` | Uzun menzil modu yaz / oku |
+
+Ayar flash'ında her tek baytlık alan `(değer, 0x55 − değer)` çifti olarak, çok baytlı gruplar sonunda `0x55 − toplam` ile saklanır:
+
+| Adres | Alan |
+|---|---|
+| `0x00` | Rapor hızı (1 = 1000 Hz, 2 = 500, 4 = 250, 8 = 125) |
+| `0x02` / `0x04` | DPI kademe sayısı / aktif kademe |
+| `0x0C + 4i` | Kademe i DPI: `x, y, ex, sağlama` — DPI kodu PAW3325 tablosundan; > 4000 DPI için `ex = 0x11` ve tablo[DPI/2] |
+| `0x2C + 4i` | Kademe i rengi `r, g, b, sağlama` |
+| `0x4C` … `0x52` | DPI gösterge ışığı: mod, parlaklık, hız, etkin |
+| `0xA0` … `0xA7` | Işık şeridi: mod, r, g, b, hız, parlaklık, sağlama; `0xA7` etkin |
+| `0xA9` | Debounce (ms) |
+| `0xAB` / `0xAF` / `0xB1` | Motion sync / açı düzeltme / ripple kontrolü |
+| `0xAD` | Hareketsizlikte ışık kapanma süresi (×10 s) |
+| `0xB3` | Hareket ederken ışığı kapat |
+| `0xB5` / `0xB7` | Maksimum performans etkin / süresi (×10 s) |
+
+Alan adları üreticinin yazılımıyla birlikte gelen hata ayıklama sembollerinden (`MouseConfig`, `LedBar`, `DPILed`, `DPIConfig`, `BatteryStatus`) alınmıştır. `claw_proto.py` bu katmanın tamamıdır ve tek başına da kullanılabilir.
+
+## Dosyalar
+
+| Dosya | |
+|---|---|
+| `claw_tray.py` | Tepsi uygulaması ve menü |
+| `claw_proto.py` | Protokol katmanı (hidapi) ve PAW3325 DPI tablosu |
+| `kurulum.ps1` | Kısayolları oluşturur / kaldırır |
+| `claw.ico` | Kısayol simgesi |
+
+## English summary
+
+Lightweight Windows tray app for the Claw CrossFire AIR V1 wireless mouse: battery percentage with notifications and every sensor / lighting setting in a right-click menu, talking to the mouse directly over HID (no vendor DLL, no vendor software). Reverse-engineered protocol and flash layout are documented above; `claw_proto.py` is a standalone protocol layer. Tested only on CrossFire AIR V1 (PAW3325, firmware v2.0). UI strings are Turkish. Not affiliated with the manufacturer; use at your own risk.
