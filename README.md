@@ -2,7 +2,7 @@
 
 🇹🇷 **[Türkçe](README.tr.md)** · 🇬🇧 English
 
-A small Windows system-tray app for the **Claw CrossFire AIR V1** wireless mouse that needs neither the vendor's software nor its DLL.
+A small system-tray app (Windows; Linux in beta) for the **Claw CrossFire AIR V1** wireless mouse that needs neither the vendor's software nor its DLL.
 
 - **Battery percentage** as a big number in the tray; Windows notifications when charging starts/stops and at 20 % / 10 %
 - **Every setting in the right-click menu:** DPI stages, report rate, debounce, motion sync, angle snapping, ripple control, peak performance, lighting mode / colour / brightness / speed, long-range mode
@@ -28,7 +28,7 @@ Windows SmartScreen may warn about an unsigned executable the first time; choose
 
 ### Option B — from source
 
-Requirements: Windows 10/11, Python 3.10+.
+Requirements: Windows 10/11 (or Linux, see option C), Python 3.10+.
 
 ```powershell
 git clone https://github.com/Yerlifan/claw-crossfire-air-tray.git
@@ -40,6 +40,18 @@ pythonw claw_tray.py
 `kurulum.ps1` works here too (it uses `pythonw` when there is no `ClawTray.exe` next to it). To uninstall: `kurulum.ps1 -Kaldir`, then delete the folder — nothing else is written to the system.
 
 Print the current state from a terminal: `python claw_tray.py --status` (or `ClawTray.exe --status`). Force a language: `--lang en` / `--lang tr`.
+
+### Option C — Linux (beta, not yet tested on real hardware)
+
+The mouse itself needs no driver on Linux; this app only adds the tray battery/settings UI. The protocol layer is identical, but I could only verify the Linux port in a VM without the mouse attached — reports from real hardware are very welcome.
+
+```bash
+git clone https://github.com/Yerlifan/claw-crossfire-air-tray.git
+cd claw-crossfire-air-tray
+./linux/kurulum.sh        # udev rule (sudo), pip packages, .desktop + autostart, then starts it
+```
+
+Debian/Ubuntu packages for the tray backend: `sudo apt install python3-gi gir1.2-ayatanaappindicator3-0.1`; on GNOME also enable the *AppIndicator* extension. Uninstall with `./linux/kurulum.sh -u`. Config lives in `~/.config/claw-tray/`.
 
 ## Good to know
 
@@ -90,7 +102,8 @@ Field names come from the debug symbols shipped with the vendor software (`Mouse
 | `claw_tray.py` | Tray app and menu |
 | `claw_proto.py` | Protocol layer (hidapi) and PAW3325 DPI table |
 | `kurulum.ps1` | Creates / removes shortcuts |
-| `claw.ico` | Shortcut icon |
+| `claw.ico` / `claw.png` | Shortcut icon (Windows / Linux) |
+| `linux/kurulum.sh`, `linux/70-claw-crossfire.rules` | Linux installer and udev rule |
 | `build.ps1` | Builds `ClawTray.exe` with PyInstaller |
 
 ## License

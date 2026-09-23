@@ -2,7 +2,7 @@
 
 🇹🇷 Türkçe · 🇬🇧 **[English](README.md)**
 
-Claw CrossFire AIR V1 kablosuz fare için üreticinin yazılımına da DLL'ine de ihtiyaç duymayan, hafif bir sistem tepsisi aracı.
+Claw CrossFire AIR V1 kablosuz fare için üreticinin yazılımına da DLL'ine de ihtiyaç duymayan, hafif bir sistem tepsisi aracı (Windows; Linux beta).
 
 - **Pil yüzdesi** tepside büyük rakamla; şarj başlayınca / bitince, pil %20 ve %10'a düşünce Windows bildirimi
 - **Tüm ayarlar sağ tık menüsünde:** DPI kademeleri, rapor hızı, debounce, motion sync, açı düzeltme, ripple kontrolü, maksimum performans, ışık modu / renk / parlaklık / hız, uzun menzil modu
@@ -28,7 +28,7 @@ Windows SmartScreen ilk açılışta imzasız program uyarısı verebilir; *Ek b
 
 ### Seçenek B — kaynak koddan
 
-Gereksinimler: Windows 10/11, Python 3.10+.
+Gereksinimler: Windows 10/11 (ya da Linux, bkz. C seçeneği), Python 3.10+.
 
 ```powershell
 git clone https://github.com/Yerlifan/claw-crossfire-air-tray.git
@@ -40,6 +40,18 @@ pythonw claw_tray.py
 `kurulum.ps1` burada da çalışır (yanında `ClawTray.exe` yoksa `pythonw` kullanır). Kaldırmak için `kurulum.ps1 -Kaldir` çalıştırıp klasörü silin; sisteme başka hiçbir şey yazılmaz.
 
 Mevcut durumu terminalden görmek için: `python claw_tray.py --durum` (ya da `ClawTray.exe --durum`). Dili zorlamak için: `--lang tr` / `--lang en`.
+
+### Seçenek C — Linux (beta, gerçek donanımda henüz test edilmedi)
+
+Farenin kendisi Linux'ta sürücü istemez; bu araç yalnızca tepsideki pil/ayar arayüzünü ekler. Protokol katmanı aynıdır, ancak Linux taşımasını yalnızca fare takılı olmayan bir sanal makinede doğrulayabildim — gerçek donanımdan geri bildirim çok değerli.
+
+```bash
+git clone https://github.com/Yerlifan/claw-crossfire-air-tray.git
+cd claw-crossfire-air-tray
+./linux/kurulum.sh        # udev kuralı (sudo), pip paketleri, .desktop + otomatik başlatma, sonra başlatır
+```
+
+Debian/Ubuntu'da tepsi arka ucu için: `sudo apt install python3-gi gir1.2-ayatanaappindicator3-0.1`; GNOME'da ayrıca *AppIndicator* eklentisini açın. Kaldırmak için `./linux/kurulum.sh -u`. Ayarlar `~/.config/claw-tray/` altında.
 
 ## Bilinmesi gerekenler
 
@@ -90,7 +102,8 @@ Alan adları üreticinin yazılımıyla birlikte gelen hata ayıklama sembolleri
 | `claw_tray.py` | Tepsi uygulaması ve menü |
 | `claw_proto.py` | Protokol katmanı (hidapi) ve PAW3325 DPI tablosu |
 | `kurulum.ps1` | Kısayolları oluşturur / kaldırır |
-| `claw.ico` | Kısayol simgesi |
+| `claw.ico` / `claw.png` | Kısayol simgesi (Windows / Linux) |
+| `linux/kurulum.sh`, `linux/70-claw-crossfire.rules` | Linux kurulum betiği ve udev kuralı |
 | `build.ps1` | PyInstaller ile `ClawTray.exe` üretir |
 
 ## Lisans

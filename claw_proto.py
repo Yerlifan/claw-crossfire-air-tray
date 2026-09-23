@@ -35,11 +35,22 @@ _lock = threading.RLock()
 
 
 def device_paths():
-    """0xFF02 koleksiyonları; kablolu bağlantı (F5A7) önce, sonra alıcı (F512)."""
+    """Vendor collection paths; wired (F5A7) first, then the receiver (F512).
+
+    Windows: one HID path per collection -> pick usage page 0xFF02.
+    Linux (hidraw): one node per USB interface and usage_page may be 0 -> fall back to
+    interface 1; the report id 0x08 in the packet routes it to the right collection."""
     import hid
-    devs = [dv for dv in hid.enumerate(VID) if dv["usage_page"] == USAGE_PAGE]
-    devs.sort(key=lambda dv: 0 if dv["product_id"] == PID_WIRED else 1)
-    return [dv["path"] for dv in devs]
+    devs = [dv for dv in hid.enumerate(VID) if dv["product_id"] in (PID_WIRED, PID_DONGLE)]
+    sel = [dv for dv in devs if dv.get("usage_page") == USAGE_PAGE]
+    if not sel:
+        sel = [dv for dv in devs if dv.get("interface_number") == 1]
+    seen, out = set(), []
+    for dv in sorted(sel, key=lambda dv: 0 if dv["product_id"] == PID_WIRED else 1):
+        if dv["path"] not in seen:
+            seen.add(dv["path"])
+            out.append(dv["path"])
+    return out
 
 
 def packet(cmd, addr=0, length=0, data=b""):

@@ -15,12 +15,19 @@ Flash layout (each field: value, 0x55-value):
   0xB1 ripple | 0xB3 LEDs off while moving | 0xB5 peak performance | 0xB7 its time (x10 s)
 """
 import ctypes
-import ctypes.wintypes as w
 import json
 import os
+import shutil
+import subprocess
 import sys
 import threading
 import time
+
+IS_WIN = sys.platform == "win32"
+if IS_WIN:
+    import ctypes.wintypes as w
+else:
+    import fcntl
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -30,7 +37,10 @@ VENDOR_EXE = "CrossFire AIR V1.exe"
 BATTERY_INTERVAL = 5      # s
 CONFIG_INTERVAL = 30      # s
 DEVICE_POLL = 60          # s, while no mouse is connected
-APPDIR = os.path.join(os.environ.get("LOCALAPPDATA", HERE), "ClawBattery")
+if IS_WIN:
+    APPDIR = os.path.join(os.environ.get("LOCALAPPDATA", HERE), "ClawBattery")
+else:
+    APPDIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "claw-tray")
 LOG = os.path.join(APPDIR, "log.txt")
 CONFIG = os.path.join(APPDIR, "config.json")
 
@@ -137,8 +147,11 @@ def duration(x10s):
 
 def system_language():
     try:
-        lang_id = ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF
-        return "tr" if lang_id == 0x1F else "en"
+        if IS_WIN:
+            lang_id = ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF
+            return "tr" if lang_id == 0x1F else "en"
+        code = os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or ""
+        return "tr" if code.lower().startswith("tr") else "en"
     except Exception:
         return "en"
 
@@ -183,19 +196,21 @@ def dpi_decode(x, ex):
     return base * 2 if ex == 0x11 else base
 
 
-# ---- is the vendor app running ---------------------------------------------
-class _PE32(ctypes.Structure):
-    _fields_ = [("dwSize", w.DWORD), ("cntUsage", w.DWORD), ("th32ProcessID", w.DWORD),
-                ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)), ("th32ModuleID", w.DWORD),
-                ("cntThreads", w.DWORD), ("th32ParentProcessID", w.DWORD), ("pcPriClassBase", ctypes.c_long),
-                ("dwFlags", w.DWORD), ("szExeFile", ctypes.c_char * 260)]
+# ---- is the vendor app running (Windows only) --------------------------------
+if IS_WIN:
+    class _PE32(ctypes.Structure):
+        _fields_ = [("dwSize", w.DWORD), ("cntUsage", w.DWORD), ("th32ProcessID", w.DWORD),
+                    ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)), ("th32ModuleID", w.DWORD),
+                    ("cntThreads", w.DWORD), ("th32ParentProcessID", w.DWORD), ("pcPriClassBase", ctypes.c_long),
+                    ("dwFlags", w.DWORD), ("szExeFile", ctypes.c_char * 260)]
 
-
-_k32 = ctypes.windll.kernel32
-_k32.CreateToolhelp32Snapshot.restype = w.HANDLE
+    _k32 = ctypes.windll.kernel32
+    _k32.CreateToolhelp32Snapshot.restype = w.HANDLE
 
 
 def vendor_running():
+    if not IS_WIN:
+        return False
     snap = _k32.CreateToolhelp32Snapshot(0x2, 0)
     e = _PE32()
     e.dwSize = ctypes.sizeof(_PE32)
@@ -363,9 +378,14 @@ def make_icon(level, charging, paused=False):
     if charging:
         d.rounded_rectangle((0, 0, 63, 63), radius=12, outline=(255, 225, 0), width=5)
     size = 46 if len(txt) <= 2 else 34
-    try:
-        font = ImageFont.truetype("arialbd.ttf", size)
-    except Exception:
+    font = None
+    for name in ("arialbd.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "NotoSans-Bold.ttf"):
+        try:
+            font = ImageFont.truetype(name, size)
+            break
+        except Exception:
+            continue
+    if font is None:
         font = ImageFont.load_default()
     bbox = d.textbbox((0, 0), txt, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
@@ -375,10 +395,22 @@ def make_icon(level, charging, paused=False):
     return img
 
 
+_lock_handle = None
+
+
 def single_instance():
     """Exit quietly if another copy is already running (no duplicate tray icons)."""
-    _k32.CreateMutexW(None, False, "ClawTray_SingleInstance")
-    return _k32.GetLastError() != 183   # ERROR_ALREADY_EXISTS
+    global _lock_handle
+    if IS_WIN:
+        _k32.CreateMutexW(None, False, "ClawTray_SingleInstance")
+        return _k32.GetLastError() != 183   # ERROR_ALREADY_EXISTS
+    try:
+        os.makedirs(APPDIR, exist_ok=True)
+        _lock_handle = open(os.path.join(APPDIR, "lock"), "w")
+        fcntl.flock(_lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except OSError:
+        return False
 
 
 # ---- app ------------------------------------------------------------------------
@@ -414,6 +446,9 @@ def main():
 
     def notify(msg):
         try:
+            if not IS_WIN and shutil.which("notify-send"):
+                subprocess.Popen(["notify-send", "-a", t("app"), t("app"), msg])
+                return
             icon.notify(msg, t("app"))
         except Exception as e:
             log("notify error: %r" % e)
