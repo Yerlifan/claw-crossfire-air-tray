@@ -15,3 +15,6 @@ claw_battery_tray*.py
 
 __pycache__/
 *.pyc
+
+# Derleme çıktıları
+build_out/
