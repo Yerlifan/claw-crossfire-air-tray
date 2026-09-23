@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claw CrossFire AIR tray - Linux installer / Linux kurulumu
+# Claw CrossFire AIR tray: Linux installer / Linux kurulumu
 #   ./linux/kurulum.sh          install: udev rule, Python deps, .desktop + autostart
 #   ./linux/kurulum.sh -u       uninstall (keeps the folder)
 set -euo pipefail
@@ -7,12 +7,12 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="$HERE/claw_tray.py"
 ICON="$HERE/claw.png"
-RULE_SRC="$HERE/linux/70-claw-crossfire.rules"
-RULE_DST="/etc/udev/rules.d/70-claw-crossfire.rules"
+RULE_SRC="$HERE/linux/70_clawcrossfire.rules"
+RULE_DST="/etc/udev/rules.d/70_clawcrossfire.rules"
 DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 AUTOSTART_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
-DESKTOP="$DESKTOP_DIR/claw-tray.desktop"
-AUTOSTART="$AUTOSTART_DIR/claw-tray.desktop"
+DESKTOP="$DESKTOP_DIR/clawtray.desktop"
+AUTOSTART="$AUTOSTART_DIR/clawtray.desktop"
 
 if [[ "${1:-}" == "-u" ]]; then
     rm -f "$DESKTOP" "$AUTOSTART"

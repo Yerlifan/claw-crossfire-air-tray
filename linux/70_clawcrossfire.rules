@@ -1,4 +1,4 @@
-# Claw CrossFire AIR V1 - let the logged-in user talk to the mouse over hidraw
+# Claw CrossFire AIR V1: let the logged in user talk to the mouse over hidraw
 # Copy to /etc/udev/rules.d/ then: sudo udevadm control --reload && sudo udevadm trigger
 KERNEL=="hidraw*", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f512", MODE="0660", TAG+="uaccess"
 KERNEL=="hidraw*", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f5a7", MODE="0660", TAG+="uaccess"

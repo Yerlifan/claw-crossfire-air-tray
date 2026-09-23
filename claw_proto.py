@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Claw CrossFire AIR V1 - HID protokol katmanı (saf hidapi, üretici DLL'i gerekmez).
+"""Claw CrossFire AIR V1: HID protokol katmanı (saf hidapi, üretici DLL'i gerekmez).
 
 Fare / alıcı, VID 0x3554 üzerinde usage page 0xFF02 olan HID koleksiyonuyla konuşur.
-Paket (17 bayt, çıkış raporu -> giriş raporu):
-  [0]=0x08 rapor kimliği  [1]=komut  [2]=durum  [3..4]=adres (big-endian)
-  [5]=uzunluk (<=10)      [6..15]=veri           [16]=0x55 - toplam(0..15)
+Paket (17 bayt, çıkış raporu ve giriş raporu aynı biçimde):
+  [0]=0x08 rapor kimliği  [1]=komut  [2]=durum  [3..4]=adres (big endian)
+  [5]=uzunluk (<=10)      [6..15]=veri           [16]=0x55 eksi toplam(0..15)
 Komutlar: 0x03 çevrimiçi, 0x04 pil, 0x07 flash yaz, 0x08 flash oku, 0x12 sürüm,
           0x16 / 0x17 uzun menzil yaz / oku.
-Flash'ta her tek baytlık ayar (değer, 0x55-değer) çifti; çok baytlı gruplar 0x55-toplam ile biter.
+Flash'ta her tek baytlık ayar (değer, 0x55 eksi değer) çifti; çok baytlı gruplar 0x55 eksi toplam ile biter.
 """
 import threading
 import time
@@ -37,8 +37,8 @@ _lock = threading.RLock()
 def device_paths():
     """Vendor collection paths; wired (F5A7) first, then the receiver (F512).
 
-    Windows: one HID path per collection -> pick usage page 0xFF02.
-    Linux (hidraw): one node per USB interface and usage_page may be 0 -> fall back to
+    Windows: one HID path per collection, pick usage page 0xFF02.
+    Linux (hidraw): one node per USB interface and usage_page may be 0, fall back to
     interface 1; the report id 0x08 in the packet routes it to the right collection."""
     import hid
     devs = [dv for dv in hid.enumerate(VID) if dv["product_id"] in (PID_WIRED, PID_DONGLE)]
@@ -132,7 +132,7 @@ def write_flash(path, addr, data):
 
 
 def write_byte(path, addr, val):
-    """Tek baytlık ayar: (değer, 0x55-değer) çiftini yazar, geri okuyup doğrular."""
+    """Tek baytlık ayar: (değer, 0x55 eksi değer) çiftini yazar, geri okuyup doğrular."""
     pair = bytes([val & 0xFF, (0x55 - val) & 0xFF])
     if not write_flash(path, addr, pair):
         return False

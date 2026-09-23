@@ -1,4 +1,4 @@
-# Claw CrossFire AIR tray - shortcut installer (Start menu, desktop, Windows startup).
+# Claw CrossFire AIR tray: shortcut installer (Start menu, desktop, Windows startup).
 # Uses ClawTray.exe when it sits next to this script, otherwise pythonw + claw_tray.py.
 # Remove:  powershell -ExecutionPolicy Bypass -File kurulum.ps1 -Kaldir
 param([switch]$Kaldir)

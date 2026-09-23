@@ -1,6 +1,6 @@
 # Builds ClawTray.exe (single file, no console) and a release zip.
-#   powershell -ExecutionPolicy Bypass -File build.ps1            -> build_out\dist\ClawTray.exe
-#   powershell -ExecutionPolicy Bypass -File build.ps1 -Version 1.0.0  -> also build_out\ClawTray-1.0.0-win64.zip
+#   powershell -ExecutionPolicy Bypass -File build.ps1            => build_out\dist\ClawTray.exe
+#   powershell -ExecutionPolicy Bypass -File build.ps1 -Version 1.0.0  => also build_out\ClawTray_1.0.0_win64.zip
 param([string]$Version = "")
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -17,7 +17,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path build_out\dist\ClawTray.exe)) { Writ
 Write-Host ('Built: ' + (Get-Item build_out\dist\ClawTray.exe).Length + ' bytes') -ForegroundColor Green
 
 if ($Version) {
-    $pkg = Join-Path build_out "ClawTray-$Version-win64"
+    $pkg = Join-Path build_out "ClawTray_${Version}_win64"
     New-Item -ItemType Directory -Force $pkg | Out-Null
     Copy-Item build_out\dist\ClawTray.exe, kurulum.ps1, claw.ico, README.md, README.tr.md, LICENSE $pkg
     $zip = "$pkg.zip"

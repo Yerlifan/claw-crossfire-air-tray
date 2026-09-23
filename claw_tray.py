@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Claw CrossFire AIR V1 - system tray control / sistem tepsisi denetimi.
+"""Claw CrossFire AIR V1: system tray control / sistem tepsisi denetimi.
 
 Battery percentage + every mouse setting (DPI, report rate, debounce, sensor, lighting, long range)
-in the right-click menu. Talks to the mouse directly over USB HID (claw_proto.py, hidapi); the vendor
+in the right click menu. Talks to the mouse directly over USB HID (claw_proto.py, hidapi); the vendor
 software is not needed. Pauses itself while the vendor app is running to avoid conflicts.
 UI language: Turkish if the Windows UI language is Turkish, otherwise English; switchable from the menu.
 
-Flash layout (each field: value, 0x55-value):
+Flash layout (each field: value, 0x55 minus value):
   0x00 report rate | 0x02 stage count | 0x04 active stage | 0x0A LOD
   0x0C+4i DPI (x, y, ex, chk) | 0x2C+4i stage colour (r, g, b, chk)
   0x4C/4E/50/52 DPI LED: mode, brightness, speed, enable
   0xA0 light strip: mode, r, g, b, speed, brightness, chk | 0xA7 enable
-  0xA9 debounce | 0xAB motion sync | 0xAD LEDs-off time (x10 s) | 0xAF angle snapping
+  0xA9 debounce | 0xAB motion sync | 0xAD LEDs off time (x10 s) | 0xAF angle snapping
   0xB1 ripple | 0xB3 LEDs off while moving | 0xB5 peak performance | 0xB7 its time (x10 s)
 """
 import ctypes
@@ -40,11 +40,11 @@ DEVICE_POLL = 60          # s, while no mouse is connected
 if IS_WIN:
     APPDIR = os.path.join(os.environ.get("LOCALAPPDATA", HERE), "ClawBattery")
 else:
-    APPDIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "claw-tray")
+    APPDIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "clawtray")
 LOG = os.path.join(APPDIR, "log.txt")
 CONFIG = os.path.join(APPDIR, "config.json")
 
-# ---- addresses --------------------------------------------------------------
+# addresses
 A_RATE, A_MAXDPI, A_CURDPI = 0x00, 0x02, 0x04
 A_DPI, A_DPICOLOR = 0x0C, 0x2C
 A_DL_MODE, A_DL_BRIGHT, A_DL_SPEED, A_DL_EN = 0x4C, 0x4E, 0x50, 0x52
@@ -66,20 +66,20 @@ DPILED_MODE_CODES = [1, 2]
 DPI_TABLE = cp.DPI_TABLE
 DPI_REVERSE = cp.DPI_REVERSE
 
-# ---- i18n -------------------------------------------------------------------
+# i18n
 STRINGS = {
     "tr": {
         "app": "Claw fare",
-        "title_paused": "Claw fare: CrossFire açık - duraklatıldı",
+        "title_paused": "Claw fare: CrossFire açık, duraklatıldı",
         "title_asleep": "Claw fare: uykuda (hareket ettirin)",
         "title_ok": "Claw fare: %{lvl}",
         "charging": " (şarj oluyor)",
-        "dpi_suffix": " - {dpi} DPI",
+        "dpi_suffix": ", {dpi} DPI",
         "n_charge_on": "Şarj başladı (%{lvl})",
         "n_charge_off": "Şarj kablosu çıktı (%{lvl})",
         "n_full": "Pil doldu (%100), kabloyu çıkarabilirsiniz",
-        "n_low": "Pil %{lvl} - şarj edin",
-        "n_write_fail": "Ayar yazılamadı - fare uykuda ya da CrossFire açık olabilir",
+        "n_low": "Pil %{lvl}, şarj edin",
+        "n_write_fail": "Ayar yazılamadı: fare uykuda ya da CrossFire açık olabilir",
         "n_preset": "{name} ön ayarı uygulandı ({dpi} DPI)",
         "presets": "Ön ayarlar", "preset_cs2": "CS2 (800 DPI)", "preset_desk": "Masaüstü (1600 DPI)",
         "dpi": "DPI", "active_stage": "Aktif kademe", "stage_n": "Kademe {n}: {dpi} DPI",
@@ -101,16 +101,16 @@ STRINGS = {
     },
     "en": {
         "app": "Claw mouse",
-        "title_paused": "Claw mouse: CrossFire is running - paused",
+        "title_paused": "Claw mouse: CrossFire is running, paused",
         "title_asleep": "Claw mouse: asleep (move it)",
         "title_ok": "Claw mouse: {lvl}%",
         "charging": " (charging)",
-        "dpi_suffix": " - {dpi} DPI",
+        "dpi_suffix": ", {dpi} DPI",
         "n_charge_on": "Charging started ({lvl}%)",
         "n_charge_off": "Charging cable unplugged ({lvl}%)",
         "n_full": "Battery full (100%), you can unplug the cable",
-        "n_low": "Battery {lvl}% - please charge",
-        "n_write_fail": "Could not write the setting - mouse asleep or CrossFire running",
+        "n_low": "Battery {lvl}%, please charge",
+        "n_write_fail": "Could not write the setting: mouse asleep or CrossFire running",
         "n_preset": "{name} preset applied ({dpi} DPI)",
         "presets": "Presets", "preset_cs2": "CS2 (800 DPI)", "preset_desk": "Desktop (1600 DPI)",
         "dpi": "DPI", "active_stage": "Active stage", "stage_n": "Stage {n}: {dpi} DPI",
@@ -120,14 +120,14 @@ STRINGS = {
         "ripple": "Ripple control", "perf": "Peak performance", "off": "Off",
         "sec": "{n} s", "min": "{n} min",
         "light": "Lighting", "mode": "Mode", "color": "Colour", "brightness": "Brightness", "speed": "Speed",
-        "moveoff": "Lights off while moving", "ledoff": "Lights-off delay when idle",
+        "moveoff": "Lights off while moving", "ledoff": "Lights off delay when idle",
         "dpiled": "DPI indicator light",
         "led1": "Rainbow Wave", "led2": "Single Colour Breathing", "led3": "Rainbow Fixed",
         "led4": "Neon", "led5": "Rainbow Flicker", "led6": "Multicolour Fixed",
         "dl1": "Steady", "dl2": "Flicker",
         "red": "Red", "green": "Green", "blue": "Blue", "white": "White", "purple": "Purple",
         "cyan": "Cyan", "yellow": "Yellow", "orange": "Orange", "pink": "Pink",
-        "longrange": "Long-range mode", "language": "Language / Dil",
+        "longrange": "Long range mode", "language": "Language / Dil",
         "refresh": "Refresh now", "quit": "Quit",
     },
 }
@@ -140,7 +140,7 @@ def t(key, **kw):
 
 
 def duration(x10s):
-    """x10 s -> '30 sn' / '1 dk' in the current language."""
+    """x10 s to '30 sn' / '1 dk' in the current language."""
     secs = x10s * 10
     return t("sec", n=secs) if secs < 60 else t("min", n=secs // 60)
 
@@ -196,7 +196,7 @@ def dpi_decode(x, ex):
     return base * 2 if ex == 0x11 else base
 
 
-# ---- is the vendor app running (Windows only) --------------------------------
+# is the vendor app running (Windows only)
 if IS_WIN:
     class _PE32(ctypes.Structure):
         _fields_ = [("dwSize", w.DWORD), ("cntUsage", w.DWORD), ("th32ProcessID", w.DWORD),
@@ -235,7 +235,7 @@ def vendor_running_cached(max_age=3.0):
     return _vr_cache["v"]
 
 
-# ---- mouse state --------------------------------------------------------------
+# mouse state
 class Mouse:
     def __init__(self):
         self.lock = threading.RLock()
@@ -324,11 +324,11 @@ class Mouse:
             ok = cp.write_byte(self.path, addr, val)
             if ok:
                 self.flash[addr], self.flash[addr + 1] = val & 0xFF, (0x55 - val) & 0xFF
-            log("write 0x%02X=%d -> %s" % (addr, val, ok))
+            log("write 0x%02X=%d => %s" % (addr, val, ok))
             return ok
 
     def set_group(self, addr, vals):
-        """Multi-byte field: values + 0x55-sum checksum."""
+        """Multi byte field: values plus checksum (0x55 minus sum)."""
         with self.lock:
             if not self._can_write():
                 return False
@@ -336,7 +336,7 @@ class Mouse:
             ok = cp.write_flash(self.path, addr, data) and cp.read_flash(self.path, addr, len(data)) == data
             if ok:
                 self.flash[addr:addr + len(data)] = data
-            log("write 0x%02X=%s -> %s" % (addr, data.hex(" "), ok))
+            log("write 0x%02X=%s => %s" % (addr, data.hex(" "), ok))
             return ok
 
     def set_dpi(self, i, dpi):
@@ -360,17 +360,17 @@ class Mouse:
                 lr = cp.get_long_range(self.path)
                 if lr is not None:
                     self.long_range = lr
-            log("long range=%s -> %s" % (on, ok))
+            log("long range=%s => %s" % (on, ok))
             return ok
 
 
-# ---- icon -----------------------------------------------------------------------
+# icon
 def make_icon(level, charging, paused=False):
     from PIL import Image, ImageDraw, ImageFont
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     if level is None:
-        col, txt, fg = (110, 110, 110), ("II" if paused else "--"), (235, 235, 235)
+        col, txt, fg = (110, 110, 110), ("II" if paused else "?"), (235, 235, 235)
     else:
         col = (60, 170, 60) if level > 33 else (235, 150, 30) if level > 15 else (220, 50, 50)
         txt, fg = str(level), (255, 255, 255)
@@ -413,7 +413,7 @@ def single_instance():
         return False
 
 
-# ---- app ------------------------------------------------------------------------
+# app
 def main():
     cfg = load_config()
     LANG["code"] = cfg.get("lang") or system_language()
