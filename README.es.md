@@ -4,6 +4,8 @@
 
 Una pequeña aplicación de bandeja del sistema para el ratón inalámbrico **Claw CrossFire AIR V1**. No necesita el software del fabricante ni su DLL: habla con el ratón directamente por USB HID. Windows, con soporte para Linux en beta.
 
+![Menú de la bandeja](docs/screenshot.png)
+
 ## Funciones
 
 | | |

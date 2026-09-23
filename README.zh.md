@@ -4,6 +4,8 @@
 
 一个用于 **Claw CrossFire AIR V1** 无线鼠标的小型系统托盘程序。不需要厂商软件，也不需要其 DLL：它通过 USB HID 直接与鼠标通信。支持 Windows，Linux 支持处于测试阶段。
 
+![托盘菜单](docs/screenshot.png)
+
 ## 功能
 
 | | |

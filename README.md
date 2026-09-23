@@ -4,6 +4,8 @@
 
 A small system tray app for the **Claw CrossFire AIR V1** wireless mouse. It needs neither the vendor's software nor its DLL: it talks to the mouse directly over USB HID. Windows, with Linux support in beta.
 
+![Tray menu](docs/screenshot.png)
+
 ## Features
 
 | | |

@@ -4,6 +4,8 @@
 
 **Claw CrossFire AIR V1** kablosuz fare için küçük bir sistem tepsisi uygulaması. Üreticinin yazılımına da DLL'ine de ihtiyaç duymaz; fareyle doğrudan USB HID üzerinden konuşur. Windows için, Linux desteği beta.
 
+![Tepsi menüsü](docs/screenshot.png)
+
 ## Özellikler
 
 | | |

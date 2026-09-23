@@ -4,6 +4,8 @@
 
 Une petite application de zone de notification pour la souris sans fil **Claw CrossFire AIR V1**. Elle n'a besoin ni du logiciel du fabricant ni de sa DLL : elle parle directement à la souris en USB HID. Windows, avec une prise en charge de Linux en bêta.
 
+![Menu de la zone de notification](docs/screenshot.png)
+
 ## Fonctions
 
 | | |

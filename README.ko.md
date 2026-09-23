@@ -4,6 +4,8 @@
 
 **Claw CrossFire AIR V1** 무선 마우스를 위한 작은 시스템 트레이 앱입니다. 제조사 소프트웨어도 DLL도 필요 없습니다. USB HID로 마우스와 직접 통신합니다. Windows 지원, Linux 지원은 베타입니다.
 
+![트레이 메뉴](docs/screenshot.png)
+
 ## 기능
 
 | | |

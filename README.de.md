@@ -4,6 +4,8 @@
 
 Eine kleine Anwendung im Infobereich für die kabellose Maus **Claw CrossFire AIR V1**. Sie braucht weder die Herstellersoftware noch deren DLL: sie spricht direkt über USB HID mit der Maus. Windows, Linux Unterstützung in der Beta.
 
+![Menü im Infobereich](docs/screenshot.png)
+
 ## Funktionen
 
 | | |

@@ -4,6 +4,8 @@
 
 ワイヤレスマウス **Claw CrossFire AIR V1** 用の小さなシステムトレイアプリです。メーカーのソフトウェアも DLL も不要で、USB HID を通じてマウスと直接通信します。Windows 対応、Linux 対応はベータです。
 
+![トレイメニュー](docs/screenshot.png)
+
 ## 機能
 
 | | |
