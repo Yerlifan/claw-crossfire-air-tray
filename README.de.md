@@ -10,7 +10,7 @@ Eine kleine Anwendung im Infobereich für die kabellose Maus **Claw CrossFire AI
 
 | | |
 |---|---|
-| **Akku** | Prozentzahl groß im Infobereich, gelber Rahmen beim Laden. Benachrichtigungen bei Beginn und Ende des Ladens, bei vollem Akku sowie bei 20% und 10%. Das Symbol zeigt `II`, während die Maus schläft, und verschwindet, wenn keine Maus verbunden ist. |
+| **Akku** | Prozentzahl groß im Infobereich, gelber Rahmen beim Laden. Benachrichtigungen bei Beginn und Ende des Ladens, bei vollem Akku sowie bei 20% und 10%. Das Symbol zeigt `II`, während die Maus schläft, und verschwindet, wenn keine Maus verbunden ist. Merkt sich, wann der Akku 100% erreicht, und zeigt die seitdem vergangene Zeit im Tooltip und beim nächsten Ladestart, damit Sie sehen, wie lange eine Ladung hält. |
 | **Alle Einstellungen im Kontextmenü** | DPI Stufen (Werte, aktive Stufe, Anzahl), Abfragerate, Entprellung, Motion Sync, Winkelkorrektur, Ripple Kontrolle, maximale Leistung, Beleuchtungsmodus, Farbe, Helligkeit, Geschwindigkeit, Licht bei Bewegung aus, Abschaltverzögerung, DPI Anzeigelicht, Langstreckenmodus. Jeder Schreibvorgang wird von der Maus zurückgelesen und geprüft. |
 | **Fünf bearbeitbare Voreinstellungen** | Spielen, Desktop, Präzision, Energiesparen, Präsentation. Mit einem Klick anwenden, die aktuellen Mauseinstellungen in einen Speicherplatz übernehmen, umbenennen, zurücksetzen. Gespeichert in `config.json`. |
 | **Hilfe** | Das Untermenü Hilfe listet jede Einstellung; ein Klick zeigt eine kurze Erklärung als Benachrichtigung. „Anleitung öffnen“ zeigt alle Erklärungen in einem scrollbaren Fenster. |

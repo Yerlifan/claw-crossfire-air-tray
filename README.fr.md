@@ -10,7 +10,7 @@ Une petite application de zone de notification pour la souris sans fil **Claw Cr
 
 | | |
 |---|---|
-| **Batterie** | Pourcentage en grand dans la zone de notification, cadre jaune pendant la charge. Notifications au début et à la fin de la charge, quand la batterie est pleine, puis à 20% et 10%. L'icône affiche `II` quand la souris est en veille et disparaît quand la souris n'est pas connectée. |
+| **Batterie** | Pourcentage en grand dans la zone de notification, cadre jaune pendant la charge. Notifications au début et à la fin de la charge, quand la batterie est pleine, puis à 20% et 10%. L'icône affiche `II` quand la souris est en veille et disparaît quand la souris n'est pas connectée. Enregistre le moment où la batterie atteint 100% et affiche le temps écoulé depuis dans l'infobulle et au début de la charge suivante, pour savoir combien de temps dure une charge. |
 | **Tous les réglages dans le menu contextuel** | Niveaux de DPI (valeurs, niveau actif, nombre de niveaux), taux de rapport, anti rebond, motion sync, correction d'angle, contrôle d'ondulation, performance maximale, mode, couleur, luminosité et vitesse de l'éclairage, extinction en mouvement, délai d'extinction, voyant DPI, mode longue portée. Chaque écriture est relue depuis la souris et vérifiée. |
 | **Cinq préréglages modifiables** | Jeu, Bureau, Précision, Économie de batterie, Présentation. Appliquer en un clic, enregistrer les réglages actuels de la souris dans un préréglage, le renommer, le rétablir. Stockés dans `config.json`. |
 | **Aide** | Le sous menu Aide liste chaque réglage ; un clic affiche une courte explication en notification. « Ouvrir le guide » affiche toutes les explications dans une fenêtre défilante. |

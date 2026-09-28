@@ -10,7 +10,7 @@ Una pequeña aplicación de bandeja del sistema para el ratón inalámbrico **Cl
 
 | | |
 |---|---|
-| **Batería** | Porcentaje en número grande en la bandeja, marco amarillo mientras carga. Avisos al iniciar o terminar la carga, al llenarse la batería y al 20% y 10%. El icono muestra `II` mientras el ratón está en reposo y se oculta si el ratón no está conectado. |
+| **Batería** | Porcentaje en número grande en la bandeja, marco amarillo mientras carga. Avisos al iniciar o terminar la carga, al llenarse la batería y al 20% y 10%. El icono muestra `II` mientras el ratón está en reposo y se oculta si el ratón no está conectado. Registra cuándo la batería llega al 100% y muestra el tiempo transcurrido desde entonces en la descripción emergente y al iniciar la siguiente carga, para saber cuánto dura una carga. |
 | **Todos los ajustes en el menú contextual** | Niveles de DPI (valores, nivel activo, número de niveles), tasa de sondeo, antirrebote, motion sync, corrección de ángulo, control de ondulación, rendimiento máximo, modo, color, brillo y velocidad de la iluminación, apagar luces al mover, retardo de apagado, luz indicadora de DPI, modo de largo alcance. Cada escritura se relee del ratón y se verifica. |
 | **Cinco preajustes editables** | Juegos, Escritorio, Precisión, Ahorro de batería, Presentación. Aplicar con un clic, guardar los ajustes actuales del ratón en un preajuste, renombrarlo, restablecerlo. Se guardan en `config.json`. |
 | **Ayuda** | El submenú Ayuda lista cada ajuste; al pulsar uno aparece una breve explicación como notificación. "Abrir la guía" muestra todas las explicaciones en una ventana desplazable. |

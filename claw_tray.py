@@ -101,7 +101,8 @@ def get_presets(cfg, lang):
 
 
 LANG = {"code": "en"}
-UNITS = {"ms", "sn", "dk", "s", "min", "hz", "с", "мс", "мин", "秒", "分钟", "分", "초", "분", "ث", "د"}
+UNITS = {"ms", "sn", "dk", "s", "min", "hz", "с", "мс", "мин", "秒", "分钟", "分", "초", "분", "ث", "د",
+         "gün", "sa", "d", "h", "j", "t", "std", "д", "ч", "天", "小时", "日", "時間", "일", "시간", "ي", "س"}
 
 
 def tcase(text, lang="en"):
@@ -136,6 +137,17 @@ def duration(x10s):
     """x10 s to '30 sn' / '1 dk' in the current language."""
     secs = x10s * 10
     return t("sec", n=secs) if secs < 60 else t("min", n=secs // 60)
+
+
+def elapsed(secs):
+    """Seconds to '5 gün 3 sa' / '3 sa 12 dk' / '12 dk' in the current language (two largest units)."""
+    secs = max(0, int(secs))
+    d, h, mn = secs // 86400, (secs // 3600) % 24, (secs // 60) % 60
+    if d:
+        return t("day", n=d) + (" " + t("hour", n=h) if h else "")
+    if h:
+        return t("hour", n=h) + (" " + t("min", n=mn) if mn else "")
+    return t("min", n=mn)
 
 
 def system_language():
@@ -475,6 +487,9 @@ def main():
     if "--durum" in sys.argv or "--status" in sys.argv:
         m.poll(force_config=True)
         print("status:", m.status, "| battery:", m.battery, "| long range:", m.long_range)
+        if cfg.get("full_at"):
+            print("last full charge:", time.strftime("%Y-%m-%d %H:%M", time.localtime(cfg["full_at"])),
+                  "| since:", elapsed(time.time() - cfg["full_at"]))
         if m.flash:
             n = m.byte(A_MAXDPI) or 0
             print("rate code:", m.byte(A_RATE), "| stages:", n, "| active:", m.byte(A_CURDPI),
@@ -503,6 +518,16 @@ def main():
         except Exception as e:
             log("notify error: %r" % e)
 
+    def since_full(even_if_charging=False):
+        """', tam şarjdan beri 5 gün 3 sa' while running on battery, else ''."""
+        if not cfg.get("full_at") or not m.battery or (m.battery[1] and not even_if_charging):
+            return ""
+        return t("since_full", d=elapsed(time.time() - cfg["full_at"]))
+
+    def mark_full():
+        cfg["full_at"] = int(time.time())
+        save_config(cfg)
+
     def title_text():
         if m.status == "paused":
             return t("title_paused")
@@ -513,7 +538,7 @@ def main():
             n = m.byte(A_CURDPI)
             dpi = m.dpi(n) if n is not None else None
             s = t("title_ok", lvl=lvl) + (t("charging") if chg else "")
-            return s + (t("dpi_suffix", dpi=dpi) if dpi else "")
+            return s + (t("dpi_suffix", dpi=dpi) if dpi else "") + since_full()
         return t("app")
 
     def redraw(force=False):
@@ -534,7 +559,8 @@ def main():
         if ttl != last["title"]:
             icon.title = ttl
             last["title"] = ttl
-        msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"], json.dumps(cfg.get("presets"), sort_keys=True))
+        msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"],
+                json.dumps(cfg.get("presets"), sort_keys=True), since_full())
         if force or msig != last["menu"]:
             try:
                 icon.update_menu()
@@ -547,16 +573,20 @@ def main():
             return
         lvl, chg = m.battery
         if st["charging"] is not None and chg != st["charging"]:
-            notify(t("n_charge_on", lvl=lvl) if chg else t("n_charge_off", lvl=lvl))
+            # charge start: report how long the last full charge lasted, then the counter restarts at the next 100%
+            notify(t("n_charge_on", lvl=lvl) + since_full(True) if chg else t("n_charge_off", lvl=lvl))
             st["warned"].discard("full")
         if chg and lvl >= 100 and "full" not in st["warned"]:
             notify(t("n_full"))
             st["warned"].add("full")
+            mark_full()
+        if not chg and lvl >= 100 and not cfg.get("full_at"):
+            mark_full()   # first run after a charge that finished while the app was not running
         if not chg:
             for th in (20, 10):
                 key = "low%d" % th
                 if lvl <= th and key not in st["warned"]:
-                    notify(t("n_low", lvl=lvl))
+                    notify(t("n_low", lvl=lvl) + since_full())
                     st["warned"].add(key)
                 elif lvl > th + 5:
                     st["warned"].discard(key)
