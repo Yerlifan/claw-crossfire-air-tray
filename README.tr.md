@@ -13,7 +13,7 @@
 | **Pil** | Tepside büyük rakamla yüzde, şarjda sarı çerçeve. Şarj başlayınca ve bitince, pil dolunca, %20 ve %10'a düşünce bildirim. Fare uykudayken simge `II` gösterir, fare takılı değilken gizlenir. Pil %100 olunca zamanı kaydeder; o andan beri geçen süreyi araç ipucunda ve bir sonraki şarj başlangıcında gösterir, böylece tek şarjın ne kadar gittiğini görürsünüz. |
 | **Tüm ayarlar sağ tık menüsünde** | DPI kademeleri (değerler, aktif kademe, kademe sayısı), rapor hızı, debounce, motion sync, açı düzeltme, ripple kontrolü, maksimum performans, ışık modu, renk, parlaklık, hız, hareket ederken ışığı kapatma, kapanma süresi, DPI gösterge ışığı, uzun menzil modu. Yazılan her ayar fareden geri okunarak doğrulanır. |
 | **Beş düzenlenebilir ön ayar** | Oyun, Masaüstü, Hassas, Pil Tasarrufu, Sunum. Tek tıkla uygula, farenin o anki ayarlarını yuvaya kaydet, yeniden adlandır, varsayılana döndür. `config.json` içinde saklanır. |
-| **Yardım** | Yardım alt menüsü her ayarı listeler; birine tıklayınca kısa açıklaması bildirim olarak çıkar. "Rehberi Aç" tüm açıklamaları kaydırılabilir bir pencerede gösterir. |
+| **Yardım** | Yardım'a tıklayınca rehber açılır: her ayarın ne işe yaradığını anlatan kaydırılabilir bir pencere. |
 | **On dil** | Türkçe, English, Español, Français, Deutsch, Русский, 中文, 日本語, 한국어, العربية. Sistem dilini izler, menüden değiştirilebilir; seçim hatırlanır. |
 | **Hafif** | Tek bir tepsi simgesi; servis yok, sürücü yok, kendi klasörü ve `config.json` dışında hiçbir yere yazmaz. İsterseniz Windows ile başlar. |
 

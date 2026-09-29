@@ -13,7 +13,7 @@ A small system tray app for the **Claw CrossFire AIR V1** wireless mouse. It nee
 | **Battery** | Percentage as a big number in the tray, yellow frame while charging. Notifications when charging starts or stops, when the battery is full, and at 20% and 10%. The icon shows `II` while the mouse sleeps and hides when the mouse is not connected. Records when the battery reaches 100% and shows the time elapsed since then in the tooltip and at the next charge start, so you can see how long one charge lasts. |
 | **Every setting in the right click menu** | DPI stages (values, active stage, number of stages), report rate, debounce, motion sync, angle snapping, ripple control, peak performance, lighting mode, colour, brightness, speed, lights off while moving, lights off delay, DPI indicator light, long range mode. Every write is read back from the mouse and verified. |
 | **Five editable presets** | Gaming, Desktop, Precision, Battery Saver, Presentation. Apply with one click, save the mouse's current settings into a slot, rename a slot, reset it to default. Stored in `config.json`. |
-| **Help** | A Help submenu lists every setting; clicking one shows a short explanation as a notification. "Open Guide" shows all explanations in a scrollable window. |
+| **Help** | Clicking Help opens the guide: a scrollable window that explains what every setting does. |
 | **Ten languages** | Türkçe, English, Español, Français, Deutsch, Русский, 中文, 日本語, 한국어, العربية. Follows the system language and can be switched from the menu; the choice is remembered. |
 | **Lightweight** | One tray icon, no service, no driver, nothing written outside its own folder except `config.json`. Starts with Windows if you want it to. |
 

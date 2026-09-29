@@ -739,11 +739,6 @@ def main():
             Item(L("rename"), rename_preset(i)),
             Item(L("reset_preset"), act(reset_preset(i)))))
 
-    def help_action(key):
-        def run(_icon, _item):
-            notify(dict(HELP.get(LANG["code"], HELP["en"]))[key])
-        return run
-
     def language_item(code):
         return Item(LANG_NAMES[code], lambda _ic, _it: set_language(code),
                     checked=lambda _i, code=code: LANG["code"] == code, radio=True)
@@ -804,10 +799,7 @@ def main():
         Item(L("longrange"), act(lambda: m.set_long_range(not m.long_range)),
              checked=lambda _i: bool(m.long_range), enabled=ready),
         Menu.SEPARATOR,
-        Item(L("help"), Menu(
-            *[Item(L(k), help_action(k)) for k, _ in HELP["en"]],
-            Menu.SEPARATOR,
-            Item(L("guide"), lambda ic, it: launch_guide()))),
+        Item(L("help"), lambda _ic, _it: launch_guide()),
         Item(L("language"), Menu(*[language_item(code) for code in LANG_NAMES])),
         Item(L("refresh"), lambda _ic, _it: threading.Thread(target=refresh, args=(True,), daemon=True).start()),
         Item(L("quit"), lambda ic, _it: ic.stop()),

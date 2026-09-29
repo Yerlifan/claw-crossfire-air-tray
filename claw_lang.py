@@ -2,7 +2,7 @@
 """UI text for claw_tray.py in ten languages.
 
 STRINGS: short menu, tooltip and notification texts (title case is applied at load by claw_tray).
-HELP: what every setting does, shown from the Help submenu and in the guide window.
+HELP: what every setting does, shown in the guide window that the Help menu item opens.
 PRESET_NAMES: default names of the five presets.
 Placeholders like {lvl}, {dpi}, {n}, {name} must be kept as they are.
 """
