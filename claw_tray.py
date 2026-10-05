@@ -560,7 +560,7 @@ def main():
             icon.title = ttl
             last["title"] = ttl
         msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"],
-                json.dumps(cfg.get("presets"), sort_keys=True), since_full())
+                json.dumps(cfg.get("presets"), sort_keys=True), ttl)
         if force or msig != last["menu"]:
             try:
                 icon.update_menu()
