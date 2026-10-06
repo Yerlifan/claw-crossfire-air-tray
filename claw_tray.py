@@ -164,30 +164,61 @@ def system_language():
         return "en"
 
 
-def load_config():
-    try:
-        with open(CONFIG, encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
+CONFIG_STATE = {"ok": False}   # False: the last read of config.json failed, do not trust the in memory copy
+_pending_log = []
+
+
+def load_config(tries=5, quiet=False):
+    """Read config.json. Retries a few times: right after logon the file can be briefly unreadable."""
+    CONFIG_STATE["ok"] = False
+    err = None
+    for i in range(tries):
+        try:
+            with open(CONFIG, encoding="utf-8") as f:
+                data = json.load(f)
+            CONFIG_STATE["ok"] = True
+            return data if isinstance(data, dict) else {}
+        except FileNotFoundError:
+            CONFIG_STATE["ok"] = True
+            return {}
+        except Exception as e:
+            err = e
+            if i + 1 < tries:
+                time.sleep(0.5)
+    if not quiet:
+        log("config load error: %r" % err)
+    return {}
 
 
 def save_config(cfg):
+    """Write config.json atomically. If the startup read failed, keys that are only on disk are kept."""
     try:
         os.makedirs(APPDIR, exist_ok=True)
-        with open(CONFIG, "w", encoding="utf-8") as f:
+        if not CONFIG_STATE["ok"]:
+            disk = load_config(tries=1)
+            if not CONFIG_STATE["ok"]:
+                log("config save skipped: file unreadable")
+                return
+            for k, v in disk.items():
+                cfg.setdefault(k, v)
+        tmp = CONFIG + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, CONFIG)
     except Exception as e:
         log("config save error: %r" % e)
 
 
 def log(msg):
+    """Append to log.txt; lines that could not be written are kept and flushed with the next one."""
+    _pending_log.append(time.strftime("%Y-%m-%d %H:%M:%S ") + msg)
     try:
         os.makedirs(APPDIR, exist_ok=True)
         with open(LOG, "a", encoding="utf-8") as f:
-            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + msg + chr(10))
+            f.write(chr(10).join(_pending_log) + chr(10))
+        _pending_log.clear()
     except Exception:
-        pass
+        del _pending_log[:-50]
 
 
 def dpi_encode(dpi):
@@ -592,8 +623,21 @@ def main():
                     st["warned"].discard(key)
         st["charging"] = chg
 
+    def recover_config():
+        """The startup read failed: try again and take over the keys we are missing (full_at, presets, lang)."""
+        disk = load_config(tries=1, quiet=True)
+        if not CONFIG_STATE["ok"]:
+            return
+        for k, v in disk.items():
+            cfg.setdefault(k, v)
+        LANG["code"] = cfg.get("lang") or LANG["code"]
+        log("config recovered")
+        redraw(force=True)
+
     def refresh(force=False):
         try:
+            if not CONFIG_STATE["ok"]:
+                recover_config()
             m.poll(force_config=force)
             battery_notifications()
         except Exception as e:
