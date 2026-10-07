@@ -164,7 +164,10 @@ def system_language():
         return "en"
 
 
-CONFIG_STATE = {"ok": False}   # False: the last read of config.json failed, do not trust the in memory copy
+START_TIME = time.time()
+RETRY_WINDOW = 600             # s after start during which an empty or failed config read is retried
+CONFIG_STATE = {"ok": False, "retry": True}   # ok False: last read failed; retry: keep re reading in the background
+BOOT_LOG = os.path.join(HERE, "boot_log.txt")  # fallback when APPDIR itself is unreachable
 _pending_log = []
 
 
@@ -178,16 +181,32 @@ def load_config(tries=5, quiet=False):
                 data = json.load(f)
             CONFIG_STATE["ok"] = True
             return data if isinstance(data, dict) else {}
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            # right after logon the folder can look missing for a moment, so this is retried for a while
             CONFIG_STATE["ok"] = True
+            if not quiet:
+                log("config not found: %r | %s" % (e, path_report()))
             return {}
         except Exception as e:
             err = e
             if i + 1 < tries:
                 time.sleep(0.5)
     if not quiet:
-        log("config load error: %r" % err)
+        log("config load error: %r | %s" % (err, path_report()))
     return {}
+
+
+def path_report():
+    """Which parts of the config path exist right now (diagnostics for failed reads)."""
+    parts = []
+    cur = CONFIG
+    while True:
+        parts.append("%s=%s" % (os.path.basename(cur) or cur, int(os.path.exists(cur))))
+        nxt = os.path.dirname(cur)
+        if nxt == cur or len(parts) > 6:
+            break
+        cur = nxt
+    return " ".join(reversed(parts))
 
 
 def save_config(cfg):
@@ -210,15 +229,20 @@ def save_config(cfg):
 
 
 def log(msg):
-    """Append to log.txt; lines that could not be written are kept and flushed with the next one."""
+    """Append to log.txt; lines that could not be written are kept, flushed with the next one and mirrored to BOOT_LOG."""
     _pending_log.append(time.strftime("%Y-%m-%d %H:%M:%S ") + msg)
     try:
         os.makedirs(APPDIR, exist_ok=True)
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(chr(10).join(_pending_log) + chr(10))
         _pending_log.clear()
-    except Exception:
+    except Exception as e:
         del _pending_log[:-50]
+        try:
+            with open(BOOT_LOG, "a", encoding="utf-8") as f:
+                f.write("%s log.txt unwritable: %r | %s | %s%s" % (time.strftime("%Y-%m-%d %H:%M:%S"), e, path_report(), msg, chr(10)))
+        except Exception:
+            pass
 
 
 def dpi_encode(dpi):
@@ -502,6 +526,7 @@ def single_instance():
 # app
 def main():
     cfg = load_config()
+    CONFIG_STATE["retry"] = not (CONFIG_STATE["ok"] and cfg)
     LANG["code"] = cfg.get("lang") or system_language()
     for i, a in enumerate(sys.argv):
         if a == "--lang" and i + 1 < len(sys.argv) and sys.argv[i + 1] in STRINGS:
@@ -624,19 +649,25 @@ def main():
         st["charging"] = chg
 
     def recover_config():
-        """The startup read failed: try again and take over the keys we are missing (full_at, presets, lang)."""
+        """The startup read failed or came back empty: read again and take over the keys we are missing."""
+        if time.time() - START_TIME > RETRY_WINDOW:
+            CONFIG_STATE["retry"] = False
+            if not cfg:
+                log("config still empty after %d s, giving up: %s" % (RETRY_WINDOW, path_report()))
+            return
         disk = load_config(tries=1, quiet=True)
-        if not CONFIG_STATE["ok"]:
+        if not CONFIG_STATE["ok"] or not disk:
             return
         for k, v in disk.items():
             cfg.setdefault(k, v)
         LANG["code"] = cfg.get("lang") or LANG["code"]
-        log("config recovered")
+        CONFIG_STATE["retry"] = False
+        log("config recovered after %d s" % (time.time() - START_TIME))
         redraw(force=True)
 
     def refresh(force=False):
         try:
-            if not CONFIG_STATE["ok"]:
+            if CONFIG_STATE["retry"]:
                 recover_config()
             m.poll(force_config=force)
             battery_notifications()

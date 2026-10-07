@@ -19,3 +19,4 @@ __pycache__/
 # Derleme çıktıları
 build_out/
 _gen_*.py
+boot_log.txt
