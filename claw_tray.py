@@ -171,6 +171,50 @@ BOOT_LOG = os.path.join(HERE, "boot_log.txt")  # fallback when APPDIR itself is 
 _pending_log = []
 
 
+REG_KEY = r"Software\ClawTray"
+REG_BACKUP = ("full_at", "lang")   # config keys mirrored to the registry, used when config.json cannot be read
+
+
+def reg_set(name, value):
+    """HKCU backup; the registry keeps working when the file system is not reachable for this process."""
+    if not IS_WIN:
+        return
+    try:
+        import winreg
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_KEY) as k:
+            winreg.SetValueEx(k, name, 0, winreg.REG_SZ, json.dumps(value, ensure_ascii=False))
+    except Exception:
+        pass
+
+
+def reg_get(name):
+    if not IS_WIN:
+        return None
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_KEY) as k:
+            return json.loads(winreg.QueryValueEx(k, name)[0])
+    except Exception:
+        return None
+
+
+def diag(name, text):
+    """Startup diagnostics that must survive a broken file system: stored in the registry."""
+    reg_set("diag_" + name, time.strftime("%Y-%m-%d %H:%M:%S ") + text)
+
+
+def config_from_registry(cfg):
+    """Fill missing backup keys from the registry; True when something was taken over."""
+    took = False
+    for k in REG_BACKUP:
+        if k not in cfg:
+            v = reg_get(k)
+            if v is not None:
+                cfg[k] = v
+                took = True
+    return took
+
+
 def load_config(tries=5, quiet=False):
     """Read config.json. Retries a few times: right after logon the file can be briefly unreadable."""
     CONFIG_STATE["ok"] = False
@@ -185,6 +229,7 @@ def load_config(tries=5, quiet=False):
             # right after logon the folder can look missing for a moment, so this is retried for a while
             CONFIG_STATE["ok"] = True
             if not quiet:
+                diag("load", "not found: %r | %s" % (e, path_report()))
                 log("config not found: %r | %s" % (e, path_report()))
             return {}
         except Exception as e:
@@ -192,6 +237,7 @@ def load_config(tries=5, quiet=False):
             if i + 1 < tries:
                 time.sleep(0.5)
     if not quiet:
+        diag("load", "error: %r | %s" % (err, path_report()))
         log("config load error: %r | %s" % (err, path_report()))
     return {}
 
@@ -220,11 +266,15 @@ def save_config(cfg):
                 return
             for k, v in disk.items():
                 cfg.setdefault(k, v)
+        for k in REG_BACKUP:
+            if k in cfg:
+                reg_set(k, cfg[k])
         tmp = CONFIG + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
         os.replace(tmp, CONFIG)
     except Exception as e:
+        diag("save", "%r | %s" % (e, path_report()))
         log("config save error: %r" % e)
 
 
@@ -238,6 +288,7 @@ def log(msg):
         _pending_log.clear()
     except Exception as e:
         del _pending_log[:-50]
+        diag("log", "%r | %s | %s" % (e, path_report(), msg))
         try:
             with open(BOOT_LOG, "a", encoding="utf-8") as f:
                 f.write("%s log.txt unwritable: %r | %s | %s%s" % (time.strftime("%Y-%m-%d %H:%M:%S"), e, path_report(), msg, chr(10)))
@@ -527,6 +578,8 @@ def single_instance():
 def main():
     cfg = load_config()
     CONFIG_STATE["retry"] = not (CONFIG_STATE["ok"] and cfg)
+    if CONFIG_STATE["retry"] and config_from_registry(cfg):
+        diag("fallback", "config taken from registry: %s" % sorted(cfg))
     LANG["code"] = cfg.get("lang") or system_language()
     for i, a in enumerate(sys.argv):
         if a == "--lang" and i + 1 < len(sys.argv) and sys.argv[i + 1] in STRINGS:
@@ -546,6 +599,16 @@ def main():
         if cfg.get("full_at"):
             print("last full charge:", time.strftime("%Y-%m-%d %H:%M", time.localtime(cfg["full_at"])),
                   "| since:", elapsed(time.time() - cfg["full_at"]))
+        if IS_WIN:
+            import winreg
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_KEY) as k:
+                    i = 0
+                    while True:
+                        name, val, _ = winreg.EnumValue(k, i); i += 1
+                        print("registry", name + ":", val)
+            except OSError:
+                pass
         if m.flash:
             n = m.byte(A_MAXDPI) or 0
             print("rate code:", m.byte(A_RATE), "| stages:", n, "| active:", m.byte(A_CURDPI),
@@ -652,6 +715,7 @@ def main():
         """The startup read failed or came back empty: read again and take over the keys we are missing."""
         if time.time() - START_TIME > RETRY_WINDOW:
             CONFIG_STATE["retry"] = False
+            diag("recover", "gave up after %d s, keys now: %s | %s" % (RETRY_WINDOW, sorted(cfg), path_report()))
             if not cfg:
                 log("config still empty after %d s, giving up: %s" % (RETRY_WINDOW, path_report()))
             return
@@ -662,6 +726,7 @@ def main():
             cfg.setdefault(k, v)
         LANG["code"] = cfg.get("lang") or LANG["code"]
         CONFIG_STATE["retry"] = False
+        diag("recover", "recovered after %d s" % (time.time() - START_TIME))
         log("config recovered after %d s" % (time.time() - START_TIME))
         redraw(force=True)
 
