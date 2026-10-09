@@ -665,6 +665,12 @@ def main():
             len(_pending_log))
         log("diag: " + txt)
         diag("click", txt)
+        short = "cfg=%d %s file=%s reg=%s | boot cfg=%d file=%s reg=%s | pend=%d" % (
+            int(now["cfg_exists"]), ",".join(now["keys"]), now["file"][:12], now["reg"][:12],
+            int(BOOT_INFO.get("cfg_exists", 0)), str(BOOT_INFO.get("file"))[:12], str(BOOT_INFO.get("reg"))[:12], len(_pending_log))
+        st["diag_until"] = time.time() + 30
+        icon.title = short[:127]
+        last["title"] = short[:127]
         notify(txt[:250])
 
     def notify(msg):
@@ -714,7 +720,7 @@ def main():
                 icon.icon = make_icon(None, False, paused=(m.status == "paused"))
             last["icon"] = isig
         ttl = title_text()
-        if ttl != last["title"]:
+        if ttl != last["title"] and time.time() > st.get("diag_until", 0):
             icon.title = ttl
             last["title"] = ttl
         msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"],
