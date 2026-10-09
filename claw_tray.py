@@ -215,6 +215,32 @@ def config_from_registry(cfg):
     return took
 
 
+BOOT_INFO = {}
+
+
+def self_test(cfg):
+    """What this process can see and do: file and registry probes, shown by the Diagnostics action."""
+    r = {"dir": APPDIR, "cfg_exists": os.path.exists(CONFIG), "keys": sorted(cfg), "full_at": cfg.get("full_at")}
+    try:
+        probe = os.path.join(APPDIR, "probe.txt")
+        os.makedirs(APPDIR, exist_ok=True)
+        with open(probe, "w", encoding="utf-8") as f:
+            f.write(str(START_TIME))
+        with open(probe, encoding="utf-8") as f:
+            r["file"] = "ok" if f.read() == str(START_TIME) else "mismatch"
+        os.remove(probe)
+    except Exception as e:
+        r["file"] = repr(e)
+    try:
+        reg_set("probe", START_TIME)
+        r["reg"] = "ok" if reg_get("probe") == START_TIME else "mismatch"
+    except Exception as e:
+        r["reg"] = repr(e)
+    r["exe"] = sys.executable
+    r["cwd"] = os.getcwd()
+    return r
+
+
 def load_config(tries=5, quiet=False):
     """Read config.json. Retries a few times: right after logon the file can be briefly unreadable."""
     CONFIG_STATE["ok"] = False
@@ -580,6 +606,7 @@ def main():
     CONFIG_STATE["retry"] = not (CONFIG_STATE["ok"] and cfg)
     if CONFIG_STATE["retry"] and config_from_registry(cfg):
         diag("fallback", "config taken from registry: %s" % sorted(cfg))
+    BOOT_INFO.update(self_test(cfg))
     LANG["code"] = cfg.get("lang") or system_language()
     for i, a in enumerate(sys.argv):
         if a == "--lang" and i + 1 < len(sys.argv) and sys.argv[i + 1] in STRINGS:
@@ -596,6 +623,7 @@ def main():
     if "--durum" in sys.argv or "--status" in sys.argv:
         m.poll(force_config=True)
         print("status:", m.status, "| battery:", m.battery, "| long range:", m.long_range)
+        print("self test:", BOOT_INFO)
         if cfg.get("full_at"):
             print("last full charge:", time.strftime("%Y-%m-%d %H:%M", time.localtime(cfg["full_at"])),
                   "| since:", elapsed(time.time() - cfg["full_at"]))
@@ -627,6 +655,17 @@ def main():
     icon = pystray.Icon("ClawTray", make_icon(None, False), t("app"))
     st = {"charging": None, "warned": set()}
     last = {"icon": None, "menu": None, "title": None, "visible": None}
+
+    def show_diag():
+        """Left click on the icon: this process's own view of config, file system and registry (max 256 chars)."""
+        now = self_test(cfg)
+        txt = "%s | cfg=%s %s full_at=%s | file=%s reg=%s | boot: cfg=%s %s file=%s reg=%s | pending=%d" % (
+            APPDIR, int(now["cfg_exists"]), now["keys"], now["full_at"], now["file"], now["reg"],
+            int(BOOT_INFO.get("cfg_exists", 0)), BOOT_INFO.get("keys"), BOOT_INFO.get("file"), BOOT_INFO.get("reg"),
+            len(_pending_log))
+        log("diag: " + txt)
+        diag("click", txt)
+        notify(txt[:250])
 
     def notify(msg):
         try:
@@ -942,6 +981,7 @@ def main():
         Item(L("help"), lambda _ic, _it: launch_guide()),
         Item(L("language"), Menu(*[language_item(code) for code in LANG_NAMES])),
         Item(L("refresh"), lambda _ic, _it: threading.Thread(target=refresh, args=(True,), daemon=True).start()),
+        Item(L("diag"), lambda _ic, _it: show_diag(), default=True),
         Item(L("quit"), lambda ic, _it: ic.stop()),
     )
 
