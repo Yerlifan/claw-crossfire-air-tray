@@ -285,13 +285,16 @@ def save_config(cfg):
     """Write config.json atomically. If the startup read failed, keys that are only on disk are kept."""
     try:
         os.makedirs(APPDIR, exist_ok=True)
+        # keys that are on disk but not in memory (written by another copy, or missed at startup) are kept
+        was_ok = CONFIG_STATE["ok"]
+        disk = load_config(tries=1, quiet=True)
         if not CONFIG_STATE["ok"]:
-            disk = load_config(tries=1)
-            if not CONFIG_STATE["ok"]:
+            if not was_ok:
                 log("config save skipped: file unreadable")
                 return
-            for k, v in disk.items():
-                cfg.setdefault(k, v)
+            disk = {}
+        for k, v in disk.items():
+            cfg.setdefault(k, v)
         for k in REG_BACKUP:
             if k in cfg:
                 reg_set(k, cfg[k])
