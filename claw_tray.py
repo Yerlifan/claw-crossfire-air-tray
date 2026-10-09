@@ -659,23 +659,6 @@ def main():
     st = {"charging": None, "warned": set()}
     last = {"icon": None, "menu": None, "title": None, "visible": None}
 
-    def show_diag():
-        """Left click on the icon: this process's own view of config, file system and registry (max 256 chars)."""
-        now = self_test(cfg)
-        txt = "%s | cfg=%s %s full_at=%s | file=%s reg=%s | boot: cfg=%s %s file=%s reg=%s | pending=%d" % (
-            APPDIR, int(now["cfg_exists"]), now["keys"], now["full_at"], now["file"], now["reg"],
-            int(BOOT_INFO.get("cfg_exists", 0)), BOOT_INFO.get("keys"), BOOT_INFO.get("file"), BOOT_INFO.get("reg"),
-            len(_pending_log))
-        log("diag: " + txt)
-        diag("click", txt)
-        short = "cfg=%d %s file=%s reg=%s | boot cfg=%d file=%s reg=%s | pend=%d" % (
-            int(now["cfg_exists"]), ",".join(now["keys"]), now["file"][:12], now["reg"][:12],
-            int(BOOT_INFO.get("cfg_exists", 0)), str(BOOT_INFO.get("file"))[:12], str(BOOT_INFO.get("reg"))[:12], len(_pending_log))
-        st["diag_until"] = time.time() + 30
-        icon.title = short[:127]
-        last["title"] = short[:127]
-        notify(txt[:250])
-
     def notify(msg):
         try:
             if not IS_WIN and shutil.which("notify-send"):
@@ -723,7 +706,7 @@ def main():
                 icon.icon = make_icon(None, False, paused=(m.status == "paused"))
             last["icon"] = isig
         ttl = title_text()
-        if ttl != last["title"] and time.time() > st.get("diag_until", 0):
+        if ttl != last["title"]:
             icon.title = ttl
             last["title"] = ttl
         msig = (m.status, bytes(m.flash) if m.flash else None, m.long_range, LANG["code"],
@@ -990,7 +973,6 @@ def main():
         Item(L("help"), lambda _ic, _it: launch_guide()),
         Item(L("language"), Menu(*[language_item(code) for code in LANG_NAMES])),
         Item(L("refresh"), lambda _ic, _it: threading.Thread(target=refresh, args=(True,), daemon=True).start()),
-        Item(L("diag"), lambda _ic, _it: show_diag(), default=True),
         Item(L("quit"), lambda ic, _it: ic.stop()),
     )
 
