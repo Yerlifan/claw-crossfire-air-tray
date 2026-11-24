@@ -43,6 +43,9 @@ else:
     APPDIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "clawtray")
 LOG = os.path.join(APPDIR, "log.txt")
 CONFIG = os.path.join(APPDIR, "config.json")
+USAGE_FILE = os.path.join(APPDIR, "usage.json")   # seconds of use on battery per day
+USAGE_DAYS = 30           # days shown in the usage chart
+USAGE_KEEP = 400          # days kept in usage.json
 
 # addresses
 A_RATE, A_MAXDPI, A_CURDPI = 0x00, 0x02, 0x04
@@ -107,8 +110,9 @@ UNITS = {"ms", "sn", "dk", "s", "min", "hz", "с", "мс", "мин", "秒", "分
 
 def tcase(text, lang="en"):
     """Capitalise the first letter of every word; keeps units and {placeholders}; Turkish i/ı rules for "tr"."""
-    def cap(word):
-        if not word or word.lower() in UNITS:
+    def cap(word, prev):
+        # a unit stays lower case only right after its number: "5 gün", but "Son 30 Gün," and "Kullanılan Gün"
+        if not word or (word.lower() in UNITS and (prev[:1].isdigit() or "{" in prev)):
             return word
         for i, ch in enumerate(word):
             if ch == "{":
@@ -120,7 +124,8 @@ def tcase(text, lang="en"):
                     up = ch.upper()
                 return word[:i] + up + word[i + 1:]
         return word
-    return " ".join(cap(w) for w in text.split(" "))
+    words = text.split(" ")
+    return " ".join(cap(w, words[i - 1] if i else "") for i, w in enumerate(words))
 
 
 for _code, _lang in STRINGS.items():
@@ -146,17 +151,25 @@ def usage(secs):
     return (t("hour", n=h) + " " + t("min", n=mn)) if h else t("min", n=mn)
 
 
-def add_active(cfg, st, awake, now):
-    """Usage counter: add the time since the previous poll while the mouse is awake and on battery.
+def add_active(cfg, st, awake, now, days=None, today=None):
+    """Usage counters: add the time since the previous poll while the mouse is awake and on battery.
 
+    The time goes to cfg["active_s"] (use since the last full charge, only once a cycle has started)
+    and to days[today] (daily history for the usage chart).
     st["tick"] is the time of the previous counted poll (None after sleep, charging or no device).
-    Returns True when a minute of new use has accumulated and the counter should be written to disk."""
-    on = awake and "active_s" in cfg
-    if on and st["tick"] is not None and 0 <= now - st["tick"] <= ACTIVE_GAP:
-        cfg["active_s"] = round(cfg["active_s"] + now - st["tick"], 1)
-    st["tick"] = now if on else None
-    if "active_s" in cfg and cfg["active_s"] - st["saved"] >= ACTIVE_SAVE:
-        st["saved"] = cfg["active_s"]
+    Returns True when a minute of new use has accumulated and the counters should be written to disk."""
+    delta = 0
+    if awake and st["tick"] is not None and 0 <= now - st["tick"] <= ACTIVE_GAP:
+        delta = now - st["tick"]
+    st["tick"] = now if awake else None
+    if delta:
+        if "active_s" in cfg:
+            cfg["active_s"] = round(cfg["active_s"] + delta, 1)
+        if days is not None:
+            days[today] = round(days.get(today, 0) + delta, 1)
+        st["unsaved"] = st.get("unsaved", 0) + delta
+    if st.get("unsaved", 0) >= ACTIVE_SAVE:
+        st["unsaved"] = 0
         return True
     return False
 
@@ -388,6 +401,157 @@ def show_guide(autoclose_ms=0):
     root.mainloop()
 
 
+def load_usage():
+    """Daily use on battery: {"2026-11-24": seconds}. Missing or unreadable file gives {}."""
+    try:
+        with open(USAGE_FILE, encoding="utf-8") as f:
+            days = json.load(f).get("days", {})
+        return {str(k): float(v) for k, v in days.items()}
+    except Exception:
+        return {}
+
+
+def save_usage(days):
+    """Write usage.json atomically. A day's value only grows, so the larger of disk and memory wins."""
+    try:
+        for k, v in load_usage().items():
+            if v > days.get(k, 0):
+                days[k] = v
+        for k in sorted(days)[:-USAGE_KEEP]:
+            del days[k]
+        os.makedirs(APPDIR, exist_ok=True)
+        tmp = USAGE_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"days": dict(days)}, f, indent=1, sort_keys=True)
+        os.replace(tmp, USAGE_FILE)
+    except Exception as e:
+        log("usage save error: %r" % e)
+
+
+def tick_text(secs):
+    """Axis label for a whole number of minutes or hours: '30 dk', '2 sa'."""
+    secs = int(secs)
+    if secs and secs % 3600 == 0:
+        return t("hour", n=secs // 3600)
+    if secs < 3600:
+        return t("min", n=secs // 60)
+    return usage(secs)
+
+
+def axis_step(max_secs):
+    """Largest clean step that gives at most four gridlines above the baseline."""
+    for step in (300, 600, 900, 1800, 3600, 7200, 10800, 14400, 21600):
+        if max_secs <= step * 4:
+            return step
+    return 21600
+
+
+def show_usage(cfg, autoclose_ms=0):
+    """Column chart of the last 30 days of use on battery, one column per day, in the current language."""
+    import datetime
+    import tkinter as tk
+    surface, ink, ink2, grid, base = "#fcfcfb", "#0b0b0b", "#52514e", "#e9e8e4", "#c3c2b7"
+    bar, bar_hover = "#2a78d6", "#1c5cab"
+    days = load_usage()
+    today = datetime.date.today()
+    dates = [today - datetime.timedelta(days=USAGE_DAYS - 1 - i) for i in range(USAGE_DAYS)]
+    vals = [days.get(d.isoformat(), 0.0) for d in dates]
+    total, used = sum(vals), sum(1 for v in vals if v >= 60)
+
+    W, H = 780, 440
+    left, right, top, bottom = 76, 24, 124, 46
+    pw, ph = W - left - right, H - top - bottom
+    y0 = top + ph
+    slot = pw / USAGE_DAYS
+    bw = min(24, slot - 6)
+    step = axis_step(max(vals) if total else 3600)
+    ymax = step * max(1, -(-int(max(vals)) // step)) if total else step * 4
+
+    root = tk.Tk()
+    root.title(t("usage_title"))
+    root.resizable(False, False)
+    root.configure(bg=surface)
+    try:
+        root.iconbitmap(os.path.join(HERE, "claw.ico"))
+    except Exception:
+        pass
+    f_small, f_head, f_val = ("Segoe UI", 9), ("Segoe UI", 11, "bold"), ("Segoe UI", 15, "bold")
+    c = tk.Canvas(root, width=W, height=H, bg=surface, highlightthickness=0)
+    c.pack()
+
+    c.create_text(24, 22, text=t("usage_head"), anchor="w", font=f_head, fill=ink)
+    stats = [(t("usage_total"), usage(total)), (t("usage_avg"), usage(total / used if used else 0))]
+    if "active_s" in cfg:
+        stats.append((t("usage_cycle"), usage(cfg["active_s"])))
+    for i, (label, value) in enumerate(stats):
+        x = 24 + i * 250
+        c.create_text(x, 56, text=label, anchor="w", font=f_small, fill=ink2)
+        c.create_text(x, 82, text=value, anchor="w", font=f_val, fill=ink)
+
+    n = int(round(ymax / step))
+    for k in range(n + 1):
+        y = y0 - ph * k / n
+        c.create_line(left, y, left + pw, y, fill=base if k == 0 else grid)
+        c.create_text(left - 10, y, text=tick_text(step * k), anchor="e", font=f_small, fill=ink2)
+    for i, d in enumerate(dates):
+        if i % 5 == 4:
+            c.create_text(left + slot * (i + 0.5), y0 + 16, text=d.strftime("%d.%m"), font=f_small, fill=ink2)
+
+    r = 4
+    for i, v in enumerate(vals):
+        h = ph * v / ymax
+        if h < 1:
+            continue
+        x1 = left + slot * i + (slot - bw) / 2
+        x2, yt, tag = x1 + bw, y0 - h, "bar%d" % i
+        if h <= r:
+            c.create_rectangle(x1, yt, x2, y0, fill=bar, width=0, tags=tag)
+            continue
+        c.create_rectangle(x1, yt + r, x2, y0, fill=bar, width=0, tags=tag)
+        c.create_rectangle(x1 + r, yt, x2 - r, yt + r, fill=bar, width=0, tags=tag)
+        c.create_arc(x1, yt, x1 + 2 * r, yt + 2 * r, start=90, extent=90, fill=bar, outline="", tags=tag)
+        c.create_arc(x2 - 2 * r, yt, x2, yt + 2 * r, start=0, extent=90, fill=bar, outline="", tags=tag)
+
+    if not total:
+        c.create_text(left + pw / 2, top + ph / 2, text=t("usage_empty"), font=("Segoe UI", 10), fill=ink2)
+
+    state = {"i": None}
+
+    def leave(_e=None):
+        if state["i"] is not None:
+            c.itemconfigure("bar%d" % state["i"], fill=bar)
+            state["i"] = None
+        c.delete("tip")
+
+    def move(e):
+        i = int((e.x - left) // slot)
+        if not (0 <= i < USAGE_DAYS and top - 10 <= e.y <= y0 + 26):
+            leave()
+            return
+        if i == state["i"]:
+            return
+        leave()
+        state["i"] = i
+        c.itemconfigure("bar%d" % i, fill=bar_hover)
+        line1, line2 = dates[i].strftime("%d.%m.%Y"), usage(vals[i])
+        tw, th = 112, 46
+        cx = left + slot * (i + 0.5)
+        tx = min(max(cx - tw / 2, 6), W - tw - 6)
+        ty = y0 - ph * vals[i] / ymax - th - 8
+        if ty < top - 8:   # no room above a tall column: sit beside it, inside the plot
+            ty = top
+            tx = cx + slot / 2 + 4 if cx + slot / 2 + 4 + tw <= W - 6 else cx - slot / 2 - 4 - tw
+        c.create_rectangle(tx, ty, tx + tw, ty + th, fill="#ffffff", outline=base, tags="tip")
+        c.create_text(tx + 10, ty + 14, text=line1, anchor="w", font=f_small, fill=ink2, tags="tip")
+        c.create_text(tx + 10, ty + 32, text=line2, anchor="w", font=("Segoe UI", 10, "bold"), fill=ink, tags="tip")
+
+    c.bind("<Motion>", move)
+    c.bind("<Leave>", leave)
+    if autoclose_ms:
+        root.after(autoclose_ms, root.destroy)
+    root.mainloop()
+
+
 def rename_preset_dialog(index):
     """Small window asking for a new preset name; writes config.json and exits."""
     import tkinter as tk
@@ -404,10 +568,14 @@ def rename_preset_dialog(index):
         save_config(cfg)
 
 
-def launch_guide():
-    """Open the guide in its own process so the tray loop is never blocked."""
+def launch_window(flag):
+    """Open the guide or the usage chart in its own process so the tray loop is never blocked."""
     args = [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, os.path.abspath(__file__)]
-    subprocess.Popen(args + ["--guide", "--lang", LANG["code"]], cwd=HERE)
+    subprocess.Popen(args + [flag, "--lang", LANG["code"]], cwd=HERE)
+
+
+def launch_guide():
+    launch_window("--guide")
 
 
 # is the vendor app running (Windows only)
@@ -457,6 +625,7 @@ class Mouse:
         self.flash = None
         self.battery = None        # (level, charging)
         self.long_range = None
+        self.wired = False         # answered over the cable: not battery use, and the mouse never sleeps there
         self.status = "nodevice"   # nodevice | paused | asleep | ok
         self._cfg_time = 0
         self._paths = []
@@ -487,6 +656,7 @@ class Mouse:
                     if b and b[0] > 0:
                         got = b
                         self.path = pth
+                        self.wired = cp.is_wired(pth)
                         break
                 except Exception as e:
                     log("battery error: %r" % e)
@@ -639,6 +809,9 @@ def main():
         if a == "--lang" and i + 1 < len(sys.argv) and sys.argv[i + 1] in STRINGS:
             LANG["code"] = sys.argv[i + 1]
 
+    if "--usage" in sys.argv:
+        show_usage(cfg, autoclose_ms=1500 if "--usage-test" in sys.argv else 0)
+        return
     if "--guide" in sys.argv:
         show_guide(autoclose_ms=1500 if "--guide-test" in sys.argv else 0)
         return
@@ -655,6 +828,7 @@ def main():
             print("last full charge:", time.strftime("%Y-%m-%d %H:%M", time.localtime(cfg["full_at"])),
                   "| since:", elapsed(time.time() - cfg["full_at"]),
                   "| active use:", usage(cfg["active_s"]) if "active_s" in cfg else "not counted yet")
+        print("wired:", m.wired, "| usage days stored:", len(load_usage()))
         if IS_WIN:
             import winreg
             try:
@@ -681,7 +855,8 @@ def main():
     from pystray import Menu, MenuItem as Item
 
     icon = pystray.Icon("ClawTray", make_icon(None, False), t("app"))
-    st = {"charging": None, "warned": set(), "tick": None, "saved": cfg.get("active_s", 0)}
+    st = {"charging": None, "warned": set(), "tick": None, "unsaved": 0}
+    days = load_usage()
     last = {"icon": None, "menu": None, "title": None, "visible": None}
 
     def notify(msg):
@@ -704,12 +879,21 @@ def main():
     def mark_full():
         cfg["full_at"] = int(time.time())
         cfg["active_s"] = 0
-        st["saved"] = 0
         save_config(cfg)
 
     def count_active():
-        if add_active(cfg, st, m.status == "ok" and bool(m.battery) and not m.battery[1], time.monotonic()):
+        awake = m.status == "ok" and bool(m.battery) and not m.battery[1] and not m.wired
+        if add_active(cfg, st, awake, time.monotonic(), days, time.strftime("%Y-%m-%d")):
+            save_counters()
+
+    def save_counters():
+        save_usage(days)
+        if "active_s" in cfg:
             save_config(cfg)
+
+    def open_usage(_ic, _it):
+        save_counters()   # so the chart includes the last minute
+        launch_window("--usage")
 
     def title_text():
         if m.status == "paused":
@@ -1006,6 +1190,7 @@ def main():
         Item(L("longrange"), act(lambda: m.set_long_range(not m.long_range)),
              checked=lambda _i: bool(m.long_range), enabled=ready),
         Menu.SEPARATOR,
+        Item(L("usage"), lambda ic, it: open_usage(ic, it)),
         Item(L("help"), lambda _ic, _it: launch_guide()),
         Item(L("language"), Menu(*[language_item(code) for code in LANG_NAMES])),
         Item(L("refresh"), lambda _ic, _it: threading.Thread(target=refresh, args=(True,), daemon=True).start()),
@@ -1013,7 +1198,7 @@ def main():
     )
 
     def quit_app(ic, _it):
-        save_config(cfg)   # keep the last minute of the usage counter
+        save_counters()   # keep the last minute of the usage counters
         ic.stop()
 
     def setup(ic):

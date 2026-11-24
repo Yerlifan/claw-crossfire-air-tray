@@ -51,7 +51,16 @@ def device_paths():
         if dv["path"] not in seen:
             seen.add(dv["path"])
             out.append(dv["path"])
+            _PATH_PID[dv["path"]] = dv["product_id"]
     return out
+
+
+_PATH_PID = {}
+
+
+def is_wired(path):
+    """True when this path (from device_paths) is the mouse on its cable, not the 2.4G receiver."""
+    return _PATH_PID.get(path) == PID_WIRED
 
 
 def packet(cmd, addr=0, length=0, data=b""):

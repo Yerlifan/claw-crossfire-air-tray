@@ -11,6 +11,7 @@
 | | |
 |---|---|
 | **Pil** | Tepside büyük rakamla yüzde, şarjda sarı çerçeve. Şarj başlayınca ve bitince, pil dolunca, %20 ve %10'a düşünce bildirim. Fare uykudayken simge `II` gösterir, fare takılı değilken gizlenir. Son tam şarjdan beri farenin gerçekten kullanımda (uyanık) olduğu saatleri sayar; araç ipucunda ve bir sonraki şarj başlangıcında gösterir, böylece tek şarjın kaç saat kullanım verdiğini görürsünüz. |
+| **Kullanım grafiği** | Menüdeki "Kullanım Verisi", son 30 günün her birinde farenin pilde kaç saat kullanıldığını sütun grafikle gösterir; toplam, kullanılan gün ortalaması ve son tam şarjdan beri kullanım üstte yer alır. Sütunun üzerine gelince o günün süresi görünür. Veri bilgisayarınızda kalır. |
 | **Tüm ayarlar sağ tık menüsünde** | DPI kademeleri (değerler, aktif kademe, kademe sayısı), rapor hızı, debounce, motion sync, açı düzeltme, ripple kontrolü, maksimum performans, ışık modu, renk, parlaklık, hız, hareket ederken ışığı kapatma, kapanma süresi, DPI gösterge ışığı, uzun menzil modu. Yazılan her ayar fareden geri okunarak doğrulanır. |
 | **Beş düzenlenebilir ön ayar** | Oyun, Masaüstü, Hassas, Pil Tasarrufu, Sunum. Tek tıkla uygula, farenin o anki ayarlarını yuvaya kaydet, yeniden adlandır, varsayılana döndür. `config.json` içinde saklanır. |
 | **Yardım** | Yardım'a tıklayınca rehber açılır: her ayarın ne işe yaradığını anlatan kaydırılabilir bir pencere. |
