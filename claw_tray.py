@@ -139,6 +139,28 @@ def duration(x10s):
     return t("sec", n=secs) if secs < 60 else t("min", n=secs // 60)
 
 
+def usage(secs):
+    """Seconds of active use to '27 sa 15 dk' / '15 dk' in the current language (hours are not folded into days)."""
+    secs = max(0, int(secs))
+    h, mn = secs // 3600, (secs // 60) % 60
+    return (t("hour", n=h) + " " + t("min", n=mn)) if h else t("min", n=mn)
+
+
+def add_active(cfg, st, awake, now):
+    """Usage counter: add the time since the previous poll while the mouse is awake and on battery.
+
+    st["tick"] is the time of the previous counted poll (None after sleep, charging or no device).
+    Returns True when a minute of new use has accumulated and the counter should be written to disk."""
+    on = awake and "active_s" in cfg
+    if on and st["tick"] is not None and 0 <= now - st["tick"] <= ACTIVE_GAP:
+        cfg["active_s"] = round(cfg["active_s"] + now - st["tick"], 1)
+    st["tick"] = now if on else None
+    if "active_s" in cfg and cfg["active_s"] - st["saved"] >= ACTIVE_SAVE:
+        st["saved"] = cfg["active_s"]
+        return True
+    return False
+
+
 def elapsed(secs):
     """Seconds to '5 gün 3 sa' / '3 sa 12 dk' / '12 dk' in the current language (two largest units)."""
     secs = max(0, int(secs))
@@ -172,7 +194,9 @@ _pending_log = []
 
 
 REG_KEY = r"Software\ClawTray"
-REG_BACKUP = ("full_at", "lang")   # config keys mirrored to the registry, used when config.json cannot be read
+ACTIVE_SAVE = 60   # s of counted use between two writes of the usage counter
+ACTIVE_GAP = 30    # s; a longer gap between two polls is not counted (computer asleep, app stalled)
+REG_BACKUP = ("full_at", "active_s", "lang")   # config keys mirrored to the registry, used when config.json cannot be read
 
 
 def reg_set(name, value):
@@ -629,7 +653,8 @@ def main():
         print("self test:", BOOT_INFO)
         if cfg.get("full_at"):
             print("last full charge:", time.strftime("%Y-%m-%d %H:%M", time.localtime(cfg["full_at"])),
-                  "| since:", elapsed(time.time() - cfg["full_at"]))
+                  "| since:", elapsed(time.time() - cfg["full_at"]),
+                  "| active use:", usage(cfg["active_s"]) if "active_s" in cfg else "not counted yet")
         if IS_WIN:
             import winreg
             try:
@@ -656,7 +681,7 @@ def main():
     from pystray import Menu, MenuItem as Item
 
     icon = pystray.Icon("ClawTray", make_icon(None, False), t("app"))
-    st = {"charging": None, "warned": set()}
+    st = {"charging": None, "warned": set(), "tick": None, "saved": cfg.get("active_s", 0)}
     last = {"icon": None, "menu": None, "title": None, "visible": None}
 
     def notify(msg):
@@ -669,14 +694,22 @@ def main():
             log("notify error: %r" % e)
 
     def since_full(even_if_charging=False):
-        """', tam şarjdan beri 5 gün 3 sa' while running on battery, else ''."""
-        if not cfg.get("full_at") or not m.battery or (m.battery[1] and not even_if_charging):
+        """', tam şarjdan beri 27 sa 15 dk kullanım' while running on battery, else ''.
+
+        Only the time the mouse was awake counts. A cycle that began before the counter existed is not shown."""
+        if "active_s" not in cfg or not m.battery or (m.battery[1] and not even_if_charging):
             return ""
-        return t("since_full", d=elapsed(time.time() - cfg["full_at"]))
+        return t("since_full", d=usage(cfg["active_s"]))
 
     def mark_full():
         cfg["full_at"] = int(time.time())
+        cfg["active_s"] = 0
+        st["saved"] = 0
         save_config(cfg)
+
+    def count_active():
+        if add_active(cfg, st, m.status == "ok" and bool(m.battery) and not m.battery[1], time.monotonic()):
+            save_config(cfg)
 
     def title_text():
         if m.status == "paused":
@@ -767,6 +800,7 @@ def main():
                 recover_config()
             m.poll(force_config=force)
             battery_notifications()
+            count_active()
         except Exception as e:
             log("refresh error: %r" % e)
         redraw()
@@ -898,7 +932,9 @@ def main():
             def work():
                 args = [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, os.path.abspath(__file__)]
                 subprocess.run(args + ["--rename-preset", str(i), "--lang", LANG["code"]], cwd=HERE)
-                cfg.update(load_config())
+                disk = load_config()
+                if "presets" in disk:
+                    cfg["presets"] = disk["presets"]   # only the presets; the usage counter in memory is newer
                 redraw(force=True)
             threading.Thread(target=work, daemon=True).start()
         return run
@@ -973,8 +1009,12 @@ def main():
         Item(L("help"), lambda _ic, _it: launch_guide()),
         Item(L("language"), Menu(*[language_item(code) for code in LANG_NAMES])),
         Item(L("refresh"), lambda _ic, _it: threading.Thread(target=refresh, args=(True,), daemon=True).start()),
-        Item(L("quit"), lambda ic, _it: ic.stop()),
+        Item(L("quit"), lambda ic, it: quit_app(ic, it)),
     )
+
+    def quit_app(ic, _it):
+        save_config(cfg)   # keep the last minute of the usage counter
+        ic.stop()
 
     def setup(ic):
         ic.visible = bool(cp.device_paths())
